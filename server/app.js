@@ -8,8 +8,7 @@ const app = express();
 
 app.use(
   cors({
-    origin:["http://localhost:5173",
-      "https://matrimonial-alpha.vercel.app"],
+    origin: "http://localhost:5173",
     credentials: true,
   })
 );
@@ -19,13 +18,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 
-app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message: "Shiva Parvati Matrimonial Backend Running Successfully",
-  });
-});
 
+// app.get("/", (req, res) => {
+//   res.json({
+//     success: true,
+//     message: "Shiva Parvati Matrimonial Backend Running Successfully",
+//   });
+// });
 app.get("/api/health", (req, res) => {
   res.json({
     success: true,
