@@ -8,7 +8,8 @@ const app = express();
 
 app.use(
   cors({
-    origin: "https://matrimonial-alpha.vercel.app",
+    origin:["http://localhost:5173",
+      "https://matrimonial-alpha.vercel.app"],
     credentials: true,
   })
 );
