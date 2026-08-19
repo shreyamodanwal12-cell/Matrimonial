@@ -13,6 +13,11 @@ import SettingsPage from "./pages/admin/SettingsPage";
 import PlansPage from "./pages/payment/PlansPage";
 import PaymentPage from "./pages/payment/PaymentPage";
 import PaymentSuccessPage from "./pages/payment/PaymentSuccessPage";
+import FamilyDetailsPage from "./pages/auth/FamilyDetailsPage";
+import EducationDetailsPage from "./pages/auth/EducationDetailsPage";
+import LifestylePage from "./pages/auth/LifestylePage";
+import ProfilePage from "./pages/ProfilePage";
+
 
 function App() {
   const path = window.location.pathname;
@@ -26,6 +31,15 @@ function App() {
   if (path === "/register") {
     return <RegisterPage />;
   }
+if (path === "/register/family") {
+  return <FamilyDetailsPage />;
+}
+if (path === "/register/education") {
+  return <EducationDetailsPage />;
+}
+if (path === "/register/lifestyle") {
+  return <LifestylePage />;
+}
 
   // Payment
   if (path === "/plans") {
@@ -39,7 +53,9 @@ function App() {
   if (path === "/payment-success") {
     return <PaymentSuccessPage />;
   }
-
+if (path === "/profile") {
+  return <ProfilePage />;
+}
   // ================================
   // ADMIN PROTECTION
   // ================================

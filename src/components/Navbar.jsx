@@ -1,7 +1,18 @@
+
 import { useState } from "react";
 
 function Navbar() {
   const [open, setOpen] = useState(false);
+
+  const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    window.location.href = "/login";
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#ead8bd] bg-[#fffaf2]">
@@ -62,19 +73,42 @@ function Navbar() {
             Contact
           </a>
 
-          <a
-            href="/login"
-            className="rounded-md px-4 py-2 text-[13px] font-medium text-[#8c1d18] transition hover:bg-[#f7ead6]"
-          >
-            Login
-          </a>
+          {/* Logged In */}
+          {token && user ? (
+            <>
+              <a
+                href="/profile"
+                className="rounded-md px-4 py-2 text-[13px] font-medium text-[#8c1d18] transition hover:bg-[#f7ead6]"
+              >
+                My Profile
+              </a>
 
-          <a
-            href="/register"
-            className="rounded-md bg-[#8c1d18] px-5 py-[10px] text-[13px] font-medium text-white transition hover:bg-[#751712]"
-          >
-            Register
-          </a>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-md bg-[#8c1d18] px-5 py-[10px] text-[13px] font-medium text-white transition hover:bg-[#751712]"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              {/* Logged Out */}
+              <a
+                href="/login"
+                className="rounded-md px-4 py-2 text-[13px] font-medium text-[#8c1d18] transition hover:bg-[#f7ead6]"
+              >
+                Login
+              </a>
+
+              <a
+                href="/register"
+                className="rounded-md bg-[#8c1d18] px-5 py-[10px] text-[13px] font-medium text-white transition hover:bg-[#751712]"
+              >
+                Register
+              </a>
+            </>
+          )}
 
         </nav>
 
@@ -135,19 +169,44 @@ function Navbar() {
               Contact
             </a>
 
-            <a
-              href="/login"
-              className="text-sm font-medium text-[#8c1d18]"
-            >
-              Login
-            </a>
+            {/* Mobile Logged In */}
+            {token && user ? (
+              <>
+                <a
+                  href="/profile"
+                  onClick={() => setOpen(false)}
+                  className="text-sm font-medium text-[#8c1d18]"
+                >
+                  My Profile
+                </a>
 
-            <a
-              href="/register"
-              className="w-fit rounded-md bg-[#8c1d18] px-5 py-2 text-sm text-white"
-            >
-              Register
-            </a>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-fit rounded-md bg-[#8c1d18] px-5 py-2 text-sm text-white"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <a
+                  href="/login"
+                  onClick={() => setOpen(false)}
+                  className="text-sm font-medium text-[#8c1d18]"
+                >
+                  Login
+                </a>
+
+                <a
+                  href="/register"
+                  onClick={() => setOpen(false)}
+                  className="w-fit rounded-md bg-[#8c1d18] px-5 py-2 text-sm text-white"
+                >
+                  Register
+                </a>
+              </>
+            )}
 
           </nav>
         </div>

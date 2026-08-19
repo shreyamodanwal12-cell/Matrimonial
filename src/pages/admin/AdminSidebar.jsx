@@ -46,7 +46,12 @@ function AdminSidebar() {
   const navigate = (path) => {
     window.location.href = path;
   };
+const handleLogout = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
 
+  window.location.href = "/login";
+};
   return (
     <>
       {/* Mobile Menu Button */}
@@ -218,7 +223,12 @@ function AdminSidebar() {
               🚪
             </span>
 
-            Logout
+            <button
+  type="button"
+  onClick={handleLogout}
+>
+  Logout
+</button>
 
           </button>
 

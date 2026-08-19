@@ -43,10 +43,14 @@ function RegisterPage() {
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    console.log("Register Data:", formData);
-  };
+  console.log("Register Data:", formData);
+
+  localStorage.setItem("registrationStep1", JSON.stringify(formData));
+
+  window.location.href = "/register/family";
+};
 
   return (
     <div className="min-h-screen w-full bg-[#fff0b8] text-[#333]">
