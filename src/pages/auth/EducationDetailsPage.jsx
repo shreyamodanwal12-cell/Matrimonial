@@ -25,6 +25,9 @@ function EducationDetailsPage() {
     workLocation: "",
     annualIncome: "",
     careerDetails: "",
+    jobExperience: "",
+certificate: "",
+yearsOfExperience: "",
   });
 
   const handleChange = (e) => {

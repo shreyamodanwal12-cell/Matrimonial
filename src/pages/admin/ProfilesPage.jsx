@@ -1,94 +1,139 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 function ProfilesPage() {
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("Pending");
-  const [selectedProfile, setSelectedProfile] = useState(null);
+const [status, setStatus] = useState("All");
+const [selectedProfile, setSelectedProfile] = useState(null);
 
-  const profiles = [
-    {
-      id: 1,
-      name: "Riya Sharma",
-      age: 26,
-      gender: "Female",
-      location: "Delhi",
-      profession: "Software Engineer",
-      education: "B.Tech",
-      registered: "12 Aug 2026",
-      status: "Pending",
-      initial: "R",
-      about:
-        "A simple, family-oriented person looking for a compatible life partner.",
-    },
-    {
-      id: 2,
-      name: "Amit Mehta",
-      age: 29,
-      gender: "Male",
-      location: "Mumbai",
-      profession: "Business Owner",
-      education: "MBA",
-      registered: "11 Aug 2026",
-      status: "Pending",
-      initial: "A",
-      about:
-        "Ambitious and caring individual who values family, honesty and mutual respect.",
-    },
-    {
-      id: 3,
-      name: "Neha Kulkarni",
-      age: 27,
-      gender: "Female",
-      location: "Pune",
-      profession: "HR Manager",
-      education: "MBA HR",
-      registered: "10 Aug 2026",
-      status: "Pending",
-      initial: "N",
-      about:
-        "Independent and warm-hearted person with a strong connection to family values.",
-    },
-    {
-      id: 4,
-      name: "Karan Singh",
-      age: 30,
-      gender: "Male",
-      location: "Jaipur",
-      profession: "Architect",
-      education: "B.Arch",
-      registered: "09 Aug 2026",
-      status: "Approved",
-      initial: "K",
-      about:
-        "Creative professional looking for a meaningful and respectful relationship.",
-    },
-    {
-      id: 5,
-      name: "Sneha Patel",
-      age: 25,
-      gender: "Female",
-      location: "Ahmedabad",
-      profession: "Doctor",
-      education: "MBBS",
-      registered: "08 Aug 2026",
-      status: "Rejected",
-      initial: "S",
-      about:
-        "Medical professional who enjoys travelling, reading and spending time with family.",
-    },
-  ];
+const [profiles, setProfiles] = useState([]);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState("");
 
-  const filteredProfiles = profiles.filter((profile) => {
-    const matchesSearch =
-      profile.name.toLowerCase().includes(search.toLowerCase()) ||
-      profile.location.toLowerCase().includes(search.toLowerCase()) ||
-      profile.profession.toLowerCase().includes(search.toLowerCase());
+const [updatingStatus, setUpdatingStatus] = useState(false);
 
-    const matchesStatus =
-      status === "All" || profile.status === status;
 
-    return matchesSearch && matchesStatus;
-  });
+useEffect(() => {
+  const fetchProfiles = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const token = localStorage.getItem("token");
+
+const response = await fetch(
+  "http://localhost:5000/api/profiles",
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+);
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Unable to fetch profiles");
+      }
+
+      setProfiles(data.profiles || []);
+    } catch (error) {
+      console.error("Fetch profiles error:", error);
+      setError(error.message || "Unable to load profiles");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchProfiles();
+}, []);
+
+
+const updateProfileStatus = async (profileId, newStatus) => {
+  try {
+    setUpdatingStatus(true);
+
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+      `http://localhost:5000/api/profiles/${profileId}/status`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          profile_status: newStatus,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Unable to update profile status");
+    }
+
+    // Update profile in frontend
+    setProfiles((prevProfiles) =>
+      prevProfiles.map((profile) =>
+        profile.id === profileId
+          ? {
+              ...profile,
+              profile_status: newStatus,
+            }
+          : profile
+      )
+    );
+
+    setSelectedProfile(null);
+
+  } catch (error) {
+    console.error("Update profile status error:", error);
+    setError(error.message || "Unable to update profile status");
+  } finally {
+    setUpdatingStatus(false);
+  }
+};
+
+const pendingCount = profiles.filter(
+  (profile) => profile.profile_status === "Pending"
+).length;
+
+const approvedCount = profiles.filter(
+  (profile) => profile.profile_status === "Approved"
+).length;
+
+const rejectedCount = profiles.filter(
+  (profile) => profile.profile_status === "Rejected"
+).length;
+const filteredProfiles = profiles.filter((profile) => {
+  const matrimonial = profile.matrimonial_profiles || {};
+  const education = profile.education_details || {};
+
+  const name = profile.full_name || "";
+
+  const location =
+    matrimonial.state ||
+    matrimonial.native_place ||
+    "";
+
+  const profession =
+    education.profession ||
+    matrimonial.profession ||
+    "";
+
+  const matchesSearch =
+    name.toLowerCase().includes(search.toLowerCase()) ||
+    location.toLowerCase().includes(search.toLowerCase()) ||
+    profession.toLowerCase().includes(search.toLowerCase());
+
+  const matchesStatus =
+    status === "All" ||
+    profile.profile_status === status;
+
+  return matchesSearch && matchesStatus;
+});
 
   return (
     <div className="min-h-screen bg-[#faf7f2] text-[#3c2415]">
@@ -161,7 +206,7 @@ function ProfilesPage() {
             </p>
 
             <p className="mt-1 font-serif text-[28px] font-semibold text-[#b36b11]">
-              128
+              {pendingCount}
             </p>
 
             <p className="mt-1 text-[8px] text-[#9a806f]">
@@ -175,7 +220,7 @@ function ProfilesPage() {
             </p>
 
             <p className="mt-1 font-serif text-[28px] font-semibold text-[#287b51]">
-              46
+              {approvedCount}
             </p>
 
             <p className="mt-1 text-[8px] text-[#9a806f]">
@@ -189,7 +234,7 @@ function ProfilesPage() {
             </p>
 
             <p className="mt-1 font-serif text-[28px] font-semibold text-[#b63b3b]">
-              12
+             {rejectedCount}
             </p>
 
             <p className="mt-1 text-[8px] text-[#9a806f]">
@@ -306,14 +351,22 @@ function ProfilesPage() {
 
                       <div className="flex items-center gap-3">
 
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#8c1d18] font-serif text-[13px] font-semibold text-[#f5c45e]">
-                          {profile.initial}
-                        </div>
+                        {profile.profile_photo ? (
+  <img
+    src={profile.profile_photo}
+    alt={profile.full_name}
+    className="h-10 w-10 rounded-full object-cover"
+  />
+) : (
+  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#8c1d18] font-serif text-[13px] font-semibold text-[#f5c45e]">
+    {(profile.full_name || "U").charAt(0).toUpperCase()}
+  </div>
+)}
 
                         <div>
 
                           <p className="text-[10px] font-semibold text-[#4f3425]">
-                            {profile.name}
+                            {profile.full_name}
                           </p>
 
                           <p className="mt-0.5 text-[8px] text-[#9a806f]">
@@ -331,26 +384,36 @@ function ProfilesPage() {
                     <td className="px-4 py-4">
 
                       <p className="text-[10px] font-medium text-[#563927]">
-                        {profile.profession}
-                      </p>
+  {profile.education_details?.profession ||
+    profile.matrimonial_profiles?.profession ||
+    "Not specified"}
+</p>
 
-                      <p className="mt-0.5 text-[8px] text-[#9a806f]">
-                        {profile.education}
-                      </p>
+<p className="mt-0.5 text-[8px] text-[#9a806f]">
+  {profile.matrimonial_profiles?.education || "Not specified"}
+</p>
 
                     </td>
 
 
                     {/* Location */}
                     <td className="px-4 py-4 text-[10px] text-[#806653]">
-                      {profile.location}
-                    </td>
+  {profile.matrimonial_profiles?.state ||
+    profile.matrimonial_profiles?.native_place ||
+    "Not specified"}
+</td>
 
 
                     {/* Date */}
                     <td className="px-4 py-4 text-[10px] text-[#806653]">
-                      {profile.registered}
-                    </td>
+  {profile.created_at
+    ? new Date(profile.created_at).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "Not available"}
+</td>
 
 
                     {/* Status */}
@@ -360,15 +423,15 @@ function ProfilesPage() {
                         className={`
                           rounded-full px-2.5 py-1 text-[8px] font-semibold
                           ${
-                            profile.status === "Pending"
+                            profile.profile_status === "Pending"
                               ? "bg-[#fff1d8] text-[#b36b11]"
-                              : profile.status === "Approved"
+                              : profile.profile_status === "Approved"
                                 ? "bg-[#e7f6ed] text-[#287b51]"
                                 : "bg-[#f8e3e3] text-[#b63b3b]"
                           }
                         `}
                       >
-                        {profile.status}
+                      {profile.profile_status}
                       </span>
 
                     </td>
@@ -412,14 +475,22 @@ function ProfilesPage() {
 
                   <div className="flex items-center gap-3">
 
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#8c1d18] font-serif text-[13px] font-semibold text-[#f5c45e]">
-                      {profile.initial}
-                    </div>
+                    {profile.profile_photo ? (
+  <img
+    src={profile.profile_photo}
+    alt={profile.full_name}
+    className="h-10 w-10 rounded-full object-cover"
+  />
+) : (
+  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#8c1d18] font-serif text-[13px] font-semibold text-[#f5c45e]">
+    {(profile.full_name || "U").charAt(0).toUpperCase()}
+  </div>
+)}
 
                     <div>
 
                       <p className="text-[11px] font-semibold text-[#4f3425]">
-                        {profile.name}
+                        {profile.full_name}
                       </p>
 
                       <p className="mt-0.5 text-[9px] text-[#9a806f]">
@@ -490,7 +561,7 @@ function ProfilesPage() {
                 </p>
 
                 <h3 className="mt-1 font-serif text-[22px] font-semibold text-[#4a1712]">
-                  Review {selectedProfile.name}
+                 Review {selectedProfile.full_name}
                 </h3>
 
               </div>
@@ -512,23 +583,31 @@ function ProfilesPage() {
               {/* Profile Intro */}
               <div className="flex items-center gap-4 rounded-xl bg-[#fffaf5] p-4">
 
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#8c1d18] font-serif text-[21px] font-semibold text-[#f5c45e]">
-                  {selectedProfile.initial}
-                </div>
+                {selectedProfile.profile_photo ? (
+  <img
+    src={selectedProfile.profile_photo}
+    alt={selectedProfile.full_name}
+    className="h-16 w-16 rounded-full object-cover"
+  />
+) : (
+  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#8c1d18] font-serif text-[21px] font-semibold text-[#f5c45e]">
+    {(selectedProfile.full_name || "U").charAt(0).toUpperCase()}
+  </div>
+)}
 
                 <div>
 
-                  <h4 className="font-serif text-[20px] font-semibold text-[#4a1712]">
-                    {selectedProfile.name}
-                  </h4>
+                 <h4 className="font-serif text-[20px] font-semibold text-[#4a1712]">
+  {selectedProfile.full_name}
+</h4>
 
-                  <p className="mt-1 text-[9px] text-[#806653]">
-                    {selectedProfile.age} years • {selectedProfile.gender}
-                  </p>
+<p className="mt-1 text-[9px] text-[#806653]">
+  {selectedProfile.email}
+</p>
 
-                  <p className="mt-1 text-[9px] text-[#806653]">
-                    📍 {selectedProfile.location}
-                  </p>
+<p className="mt-1 text-[9px] text-[#806653]">
+  {selectedProfile.mobile}
+</p>
 
                 </div>
 
@@ -543,7 +622,9 @@ function ProfilesPage() {
                     Profession
                   </p>
                   <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
-                    {selectedProfile.profession}
+                    {selectedProfile.education_details?.profession ||
+  selectedProfile.matrimonial_profiles?.profession ||
+  "Not specified"}
                   </p>
                 </div>
 
@@ -552,7 +633,9 @@ function ProfilesPage() {
                     Education
                   </p>
                   <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
-                    {selectedProfile.education}
+                    {selectedProfile.matrimonial_profiles?.education ||
+  selectedProfile.education_details?.highest_qualification ||
+  "Not specified"}
                   </p>
                 </div>
 
@@ -561,7 +644,9 @@ function ProfilesPage() {
                     Registered
                   </p>
                   <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
-                    {selectedProfile.registered}
+                    {selectedProfile.matrimonial_profiles?.education ||
+  selectedProfile.education_details?.highest_qualification ||
+  "Not specified"}
                   </p>
                 </div>
 
@@ -570,9 +655,8 @@ function ProfilesPage() {
                     Current Status
                   </p>
                   <p className="mt-1 text-[10px] font-medium text-[#b36b11]">
-                    {selectedProfile.status}
+                    {selectedProfile.profile_status || "Pending"}
                   </p>
-                </div>
 
               </div>
 
@@ -582,14 +666,230 @@ function ProfilesPage() {
 
                 <p className="text-[8px] uppercase tracking-[1px] text-[#a67c35]">
                   About Profile
-                </p>
-
-                <p className="mt-2 text-[10px] leading-6 text-[#806653]">
-                  {selectedProfile.about}
-                </p>
+                 </p>
+<p className="mt-2 text-[10px] leading-6 text-[#806653]">
+  {selectedProfile.matrimonial_profiles?.job_details ||
+   selectedProfile.matrimonial_profiles?.address ||
+   selectedProfile.matrimonial_profiles?.birth_place ||
+   "No additional information available."}
+</p>
 
               </div>
 
+
+{/* Family Details */}
+<div className="mt-4 rounded-lg border border-[#eadfce] p-4">
+
+  <p className="text-[8px] uppercase tracking-[1px] text-[#a67c35]">
+    Family Details
+  </p>
+
+  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+    <div>
+      <p className="text-[8px] text-[#9a806f]">
+        Father
+      </p>
+      <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
+        {selectedProfile.family_details?.father_name || "Not specified"}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-[8px] text-[#9a806f]">
+        Father's Occupation
+      </p>
+      <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
+        {selectedProfile.family_details?.father_occupation || "Not specified"}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-[8px] text-[#9a806f]">
+        Mother
+      </p>
+      <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
+        {selectedProfile.family_details?.mother_name || "Not specified"}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-[8px] text-[#9a806f]">
+        Mother's Occupation
+      </p>
+      <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
+        {selectedProfile.family_details?.mother_occupation || "Not specified"}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-[8px] text-[#9a806f]">
+        Brothers
+      </p>
+      <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
+        {selectedProfile.family_details?.brothers ?? "Not specified"}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-[8px] text-[#9a806f]">
+        Sisters
+      </p>
+      <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
+        {selectedProfile.family_details?.sisters ?? "Not specified"}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-[8px] text-[#9a806f]">
+        Family Type
+      </p>
+      <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
+        {selectedProfile.family_details?.family_type || "Not specified"}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-[8px] text-[#9a806f]">
+        Family Status
+      </p>
+      <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
+        {selectedProfile.family_details?.family_status || "Not specified"}
+      </p>
+    </div>
+
+  </div>
+
+</div>
+          {/* Lifestyle & Partner Preferences */}
+<div className="mt-4 rounded-lg border border-[#eadfce] p-4">
+
+  <p className="text-[8px] uppercase tracking-[1px] text-[#a67c35]">
+    Lifestyle & Partner Preferences
+  </p>
+
+  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+    <div>
+      <p className="text-[8px] text-[#9a806f]">
+        Diet
+      </p>
+      <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
+        {selectedProfile.lifestyle_preferences?.diet || "Not specified"}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-[8px] text-[#9a806f]">
+        Hobbies
+      </p>
+      <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
+        {selectedProfile.lifestyle_preferences?.hobbies || "Not specified"}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-[8px] text-[#9a806f]">
+        Smoking
+      </p>
+      <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
+        {selectedProfile.lifestyle_preferences?.smoking || "Not specified"}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-[8px] text-[#9a806f]">
+        Drinking
+      </p>
+      <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
+        {selectedProfile.lifestyle_preferences?.drinking || "Not specified"}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-[8px] text-[#9a806f]">
+        Interests
+      </p>
+      <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
+        {selectedProfile.lifestyle_preferences?.interests || "Not specified"}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-[8px] text-[#9a806f]">
+        Partner Location
+      </p>
+      <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
+        {selectedProfile.lifestyle_preferences?.partner_location || "Not specified"}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-[8px] text-[#9a806f]">
+        Partner Religion
+      </p>
+      <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
+        {selectedProfile.lifestyle_preferences?.partner_religion || "Not specified"}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-[8px] text-[#9a806f]">
+        Partner Education
+      </p>
+      <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
+        {selectedProfile.lifestyle_preferences?.partner_education || "Not specified"}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-[8px] text-[#9a806f]">
+        Partner Profession
+      </p>
+      <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
+        {selectedProfile.lifestyle_preferences?.partner_profession || "Not specified"}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-[8px] text-[#9a806f]">
+        Partner Age
+      </p>
+      <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
+        {selectedProfile.lifestyle_preferences?.partner_age_from != null &&
+        selectedProfile.lifestyle_preferences?.partner_age_to != null
+          ? `${selectedProfile.lifestyle_preferences.partner_age_from} - ${selectedProfile.lifestyle_preferences.partner_age_to} years`
+          : "Not specified"}
+      </p>
+    </div>
+
+  </div>
+
+</div>  
+
+{/* Certificate */}
+<div className="mt-4 rounded-lg border border-[#eadfce] p-4">
+
+  <p className="text-[8px] uppercase tracking-[1px] text-[#a67c35]">
+    Education Certificate
+  </p>
+
+  {selectedProfile.education_details?.certificate ? (
+    <a
+      href={selectedProfile.education_details.certificate}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-3 inline-flex rounded-lg bg-[#8c1d18] px-4 py-2 text-[9px] font-semibold text-white hover:bg-[#701510]"
+    >
+      View Certificate
+    </a>
+  ) : (
+    <p className="mt-2 text-[10px] text-[#9a806f]">
+      Certificate not uploaded
+    </p>
+  )}
+
+</div>
 
               {/* Actions */}
               <div className="mt-5 flex flex-col gap-2 sm:flex-row">
@@ -602,29 +902,36 @@ function ProfilesPage() {
                   Close
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => setSelectedProfile(null)}
-                  className="flex-1 rounded-lg border border-[#d9a0a0] bg-[#fff5f5] py-2.5 text-[10px] font-semibold text-[#b63b3b] hover:bg-[#fceaea]"
-                >
-                  Reject
-                </button>
+               <button
+  type="button"
+  disabled={updatingStatus}
+  onClick={() =>
+    updateProfileStatus(selectedProfile.id, "Rejected")
+  }
+  className="flex-1 rounded-lg border border-[#d9a0a0] bg-[#fff5f5] py-2.5 text-[10px] font-semibold text-[#b63b3b] hover:bg-[#fceaea] disabled:cursor-not-allowed disabled:opacity-60"
+>
+  {updatingStatus ? "Rejecting..." : "Reject"}
+</button>
 
                 <button
-                  type="button"
-                  onClick={() => setSelectedProfile(null)}
-                  className="flex-1 rounded-lg bg-[#8c1d18] py-2.5 text-[10px] font-semibold text-white hover:bg-[#701510]"
-                >
-                  ✓ Approve Profile
-                </button>
+  type="button"
+  disabled={updatingStatus}
+  onClick={() =>
+    updateProfileStatus(selectedProfile.id, "Approved")
+  }
+  className="flex-1 rounded-lg bg-[#8c1d18] py-2.5 text-[10px] font-semibold text-white hover:bg-[#701510] disabled:cursor-not-allowed disabled:opacity-60"
+>
+  {updatingStatus ? "Approving..." : "✓ Approve Profile"}
+</button>
 
               </div>
 
             </div>
 
           </div>
-
         </div>
+        </div>
+
 
       )}
 

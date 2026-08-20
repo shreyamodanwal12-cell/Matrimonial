@@ -457,7 +457,34 @@ export const getCurrentUser = async (req, res) => {
   try {
     const { data: user, error } = await supabase
       .from("users")
-      .select("id, full_name, email, mobile, role, is_active, created_at")
+     .select(`
+  id,
+  full_name,
+  email,
+  mobile,
+  role,
+  is_active,
+  created_at,
+  matrimonial_profiles (
+    profile_for,
+    gender,
+    birth_date,
+    birth_place,
+    marital_status,
+    address,
+    religion,
+    caste,
+    sub_caste,
+    mother_tongue,
+    state,
+    native_place,
+    education,
+    profession,
+    annual_income,
+    employment_type,
+    job_details
+  )
+`)
       .eq("id", req.user.id)
       .single();
 
@@ -474,6 +501,60 @@ export const getCurrentUser = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// ======================================================
+// UPDATE CURRENT USER PROFILE
+// ======================================================
+
+export const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const { full_name, mobile } = req.body;
+
+    if (!full_name || !full_name.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Full name is required",
+      });
+    }
+
+    const { data: updatedUser, error } = await supabase
+      .from("users")
+      .update({
+        full_name: full_name.trim(),
+        mobile: mobile ? mobile.trim() : null,
+      })
+      .eq("id", userId)
+      .select(
+        "id, full_name, email, mobile, role, is_active, created_at"
+      )
+      .single();
+
+    if (error) {
+      console.error("Update profile error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to update profile",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user: updatedUser,
+    });
+
+  } catch (error) {
+    console.error("Update profile error:", error);
 
     return res.status(500).json({
       success: false,

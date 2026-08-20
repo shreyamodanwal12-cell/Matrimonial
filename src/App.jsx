@@ -16,7 +16,7 @@ import PaymentSuccessPage from "./pages/payment/PaymentSuccessPage";
 import FamilyDetailsPage from "./pages/auth/FamilyDetailsPage";
 import EducationDetailsPage from "./pages/auth/EducationDetailsPage";
 import LifestylePage from "./pages/auth/LifestylePage";
-import ProfilePage from "./pages/ProfilePage";
+import MyProfilePage from "./pages/MyProfilePage";
 
 
 function App() {
@@ -54,7 +54,7 @@ if (path === "/register/lifestyle") {
     return <PaymentSuccessPage />;
   }
 if (path === "/profile") {
-  return <ProfilePage />;
+  return <MyProfilePage />;
 }
   // ================================
   // ADMIN PROTECTION

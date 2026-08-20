@@ -223,12 +223,7 @@ const handleLogout = () => {
               🚪
             </span>
 
-            <button
-  type="button"
-  onClick={handleLogout}
->
-  Logout
-</button>
+            logout
 
           </button>
 
