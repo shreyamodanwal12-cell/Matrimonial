@@ -457,38 +457,89 @@ export const getCurrentUser = async (req, res) => {
   try {
     const { data: user, error } = await supabase
       .from("users")
-     .select(`
-  id,
-  full_name,
-  email,
-  mobile,
-  role,
-  is_active,
-  created_at,
-  matrimonial_profiles (
-    profile_for,
-    gender,
-    birth_date,
-    birth_place,
-    marital_status,
-    address,
-    religion,
-    caste,
-    sub_caste,
-    mother_tongue,
-    state,
-    native_place,
-    education,
-    profession,
-    annual_income,
-    employment_type,
-    job_details
-  )
-`)
+      .select(`
+        id,
+        full_name,
+        email,
+        mobile,
+        role,
+        is_active,
+        created_at,
+        profile_photo,
+        profile_status,
+        matrimonial_profiles (
+          profile_for,
+          gender,
+          birth_date,
+          birth_place,
+          marital_status,
+          address,
+          religion,
+          caste,
+          sub_caste,
+          mother_tongue,
+          state,
+          native_place,
+          education,
+          profession,
+          annual_income,
+          employment_type,
+          job_details
+        ),
+        education_details (
+          highest_qualification,
+          specialization,
+          college_name,
+          university_name,
+          profession,
+          company_name,
+          job_title,
+          employment_type,
+          work_location,
+          annual_income,
+          job_experience,
+          certificate,
+          years_of_experience
+        ),
+        family_details (
+          father_name,
+          father_occupation,
+          mother_name,
+          mother_occupation,
+          brothers,
+          sisters,
+          family_type,
+          family_status,
+          family_values,
+          about_family
+        ),
+        lifestyle_preferences (
+          diet,
+          smoking,
+          drinking,
+          hobbies,
+          interests,
+          partner_age_from,
+          partner_age_to,
+          partner_education,
+          partner_profession,
+          partner_religion,
+          partner_location
+        )
+      `)
       .eq("id", req.user.id)
       .single();
 
-    if (error || !user) {
+    if (error) {
+      console.error("Get current user error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to load profile",
+      });
+    }
+
+    if (!user) {
       return res.status(404).json({
         success: false,
         message: "User not found",
@@ -499,8 +550,9 @@ export const getCurrentUser = async (req, res) => {
       success: true,
       user,
     });
+
   } catch (error) {
-    console.error(error);
+    console.error("GET CURRENT USER ERROR:", error);
 
     return res.status(500).json({
       success: false,

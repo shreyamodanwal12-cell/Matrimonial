@@ -36,6 +36,22 @@ const [editForm, setEditForm] = useState({
   full_name: "",
   mobile: "",
 });
+const [family, setFamily] = useState(null);
+const [isFamilyEditing, setIsFamilyEditing] = useState(false);
+const [savingFamily, setSavingFamily] = useState(false);
+
+const [familyForm, setFamilyForm] = useState({
+  father_name: "",
+  father_occupation: "",
+  mother_name: "",
+  mother_occupation: "",
+  brothers: "",
+  sisters: "",
+  family_type: "",
+  family_status: "",
+  family_values: "",
+  about_family: "",
+});
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
@@ -90,7 +106,28 @@ if (matrimonialData) {
     employment_type: matrimonialData.employment_type || "",
     job_details: matrimonialData.job_details || "",
   });
-}setUser(data.user);
+}
+
+const familyData = data.user.family_details;
+
+setFamily(familyData);
+
+if (familyData) {
+  setFamilyForm({
+    father_name: familyData.father_name || "",
+    father_occupation: familyData.father_occupation || "",
+    mother_name: familyData.mother_name || "",
+    mother_occupation: familyData.mother_occupation || "",
+    brothers: familyData.brothers ?? "",
+    sisters: familyData.sisters ?? "",
+    family_type: familyData.family_type || "",
+    family_status: familyData.family_status || "",
+    family_values: familyData.family_values || "",
+    about_family: familyData.about_family || "",
+  });
+}
+
+setUser(data.user);
 setEditForm({
   full_name: data.user.full_name || "",
   mobile: data.user.mobile || "",
@@ -266,6 +303,43 @@ const handleSaveMatrimonial = async () => {
     alert("Unable to connect to server.");
   } finally {
     setSavingMatrimonial(false);
+  }
+};
+
+const handleSaveFamily = async () => {
+  try {
+    setSavingFamily(true);
+
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+      "http://localhost:5000/api/profiles/family",
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(familyForm),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.message || "Unable to update family details");
+      return;
+    }
+
+    setFamily(data.family);
+    setIsFamilyEditing(false);
+
+    alert("Family details updated successfully!");
+  } catch (error) {
+    console.error("Update family error:", error);
+    alert("Unable to connect to server.");
+  } finally {
+    setSavingFamily(false);
   }
 };
 
@@ -1022,7 +1096,342 @@ const handleSaveMatrimonial = async () => {
 
 </div>
 
+{/* ================= FAMILY DETAILS ================= */}
 
+<div className="border-t border-[#eadfce] px-5 py-6 sm:px-8">
+
+  <div className="flex items-center justify-between">
+
+    <div>
+      <h3 className="font-serif text-[19px] font-semibold text-[#4a1712]">
+        Family Details
+      </h3>
+
+      <p className="mt-1 text-[10px] text-[#9a806f]">
+        Information about your family.
+      </p>
+    </div>
+
+    {!isFamilyEditing && (
+      <button
+        type="button"
+        onClick={() => setIsFamilyEditing(true)}
+        className="rounded-md bg-[#8c1d18] px-4 py-2 text-[9px] font-semibold text-white hover:bg-[#751712]"
+      >
+        Edit
+      </button>
+    )}
+
+  </div>
+
+
+  <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+    {/* Father Name */}
+    <div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4">
+      <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
+        Father Name
+      </p>
+
+      {isFamilyEditing ? (
+        <input
+          type="text"
+          value={familyForm.father_name}
+          onChange={(e) =>
+            setFamilyForm({
+              ...familyForm,
+              father_name: e.target.value,
+            })
+          }
+          className="mt-2 w-full rounded-md border border-[#d7c6b5] px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
+        />
+      ) : (
+        <p className="mt-2 text-[11px] font-medium text-[#4f3425]">
+          {family?.father_name || "Not provided"}
+        </p>
+      )}
+    </div>
+
+
+    {/* Father Occupation */}
+    <div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4">
+      <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
+        Father Occupation
+      </p>
+
+      {isFamilyEditing ? (
+        <input
+          type="text"
+          value={familyForm.father_occupation}
+          onChange={(e) =>
+            setFamilyForm({
+              ...familyForm,
+              father_occupation: e.target.value,
+            })
+          }
+          className="mt-2 w-full rounded-md border border-[#d7c6b5] px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
+        />
+      ) : (
+        <p className="mt-2 text-[11px] font-medium text-[#4f3425]">
+          {family?.father_occupation || "Not provided"}
+        </p>
+      )}
+    </div>
+
+
+    {/* Mother Name */}
+    <div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4">
+      <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
+        Mother Name
+      </p>
+
+      {isFamilyEditing ? (
+        <input
+          type="text"
+          value={familyForm.mother_name}
+          onChange={(e) =>
+            setFamilyForm({
+              ...familyForm,
+              mother_name: e.target.value,
+            })
+          }
+          className="mt-2 w-full rounded-md border border-[#d7c6b5] px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
+        />
+      ) : (
+        <p className="mt-2 text-[11px] font-medium text-[#4f3425]">
+          {family?.mother_name || "Not provided"}
+        </p>
+      )}
+    </div>
+
+
+    {/* Mother Occupation */}
+    <div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4">
+      <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
+        Mother Occupation
+      </p>
+
+      {isFamilyEditing ? (
+        <input
+          type="text"
+          value={familyForm.mother_occupation}
+          onChange={(e) =>
+            setFamilyForm({
+              ...familyForm,
+              mother_occupation: e.target.value,
+            })
+          }
+          className="mt-2 w-full rounded-md border border-[#d7c6b5] px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
+        />
+      ) : (
+        <p className="mt-2 text-[11px] font-medium text-[#4f3425]">
+          {family?.mother_occupation || "Not provided"}
+        </p>
+      )}
+    </div>
+
+
+    {/* Brothers */}
+    <div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4">
+      <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
+        Brothers
+      </p>
+
+      {isFamilyEditing ? (
+        <input
+          type="number"
+          min="0"
+          value={familyForm.brothers}
+          onChange={(e) =>
+            setFamilyForm({
+              ...familyForm,
+              brothers: e.target.value,
+            })
+          }
+          className="mt-2 w-full rounded-md border border-[#d7c6b5] px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
+        />
+      ) : (
+        <p className="mt-2 text-[11px] font-medium text-[#4f3425]">
+          {family?.brothers ?? "Not provided"}
+        </p>
+      )}
+    </div>
+
+
+    {/* Sisters */}
+    <div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4">
+      <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
+        Sisters
+      </p>
+
+      {isFamilyEditing ? (
+        <input
+          type="number"
+          min="0"
+          value={familyForm.sisters}
+          onChange={(e) =>
+            setFamilyForm({
+              ...familyForm,
+              sisters: e.target.value,
+            })
+          }
+          className="mt-2 w-full rounded-md border border-[#d7c6b5] px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
+        />
+      ) : (
+        <p className="mt-2 text-[11px] font-medium text-[#4f3425]">
+          {family?.sisters ?? "Not provided"}
+        </p>
+      )}
+    </div>
+
+
+    {/* Family Type */}
+    <div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4">
+      <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
+        Family Type
+      </p>
+
+      {isFamilyEditing ? (
+        <input
+          type="text"
+          value={familyForm.family_type}
+          onChange={(e) =>
+            setFamilyForm({
+              ...familyForm,
+              family_type: e.target.value,
+            })
+          }
+          className="mt-2 w-full rounded-md border border-[#d7c6b5] px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
+        />
+      ) : (
+        <p className="mt-2 text-[11px] font-medium text-[#4f3425]">
+          {family?.family_type || "Not provided"}
+        </p>
+      )}
+    </div>
+
+
+    {/* Family Status */}
+    <div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4">
+      <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
+        Family Status
+      </p>
+
+      {isFamilyEditing ? (
+        <input
+          type="text"
+          value={familyForm.family_status}
+          onChange={(e) =>
+            setFamilyForm({
+              ...familyForm,
+              family_status: e.target.value,
+            })
+          }
+          className="mt-2 w-full rounded-md border border-[#d7c6b5] px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
+        />
+      ) : (
+        <p className="mt-2 text-[11px] font-medium text-[#4f3425]">
+          {family?.family_status || "Not provided"}
+        </p>
+      )}
+    </div>
+
+
+    {/* Family Values */}
+    <div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4 sm:col-span-2">
+      <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
+        Family Values
+      </p>
+
+      {isFamilyEditing ? (
+        <input
+          type="text"
+          value={familyForm.family_values}
+          onChange={(e) =>
+            setFamilyForm({
+              ...familyForm,
+              family_values: e.target.value,
+            })
+          }
+          className="mt-2 w-full rounded-md border border-[#d7c6b5] px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
+        />
+      ) : (
+        <p className="mt-2 text-[11px] font-medium text-[#4f3425]">
+          {family?.family_values || "Not provided"}
+        </p>
+      )}
+    </div>
+
+
+    {/* About Family */}
+    <div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4 sm:col-span-2">
+      <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
+        About Family
+      </p>
+
+      {isFamilyEditing ? (
+        <textarea
+          rows="4"
+          value={familyForm.about_family}
+          onChange={(e) =>
+            setFamilyForm({
+              ...familyForm,
+              about_family: e.target.value,
+            })
+          }
+          className="mt-2 w-full resize-none rounded-md border border-[#d7c6b5] px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
+        />
+      ) : (
+        <p className="mt-2 text-[11px] font-medium text-[#4f3425]">
+          {family?.about_family || "Not provided"}
+        </p>
+      )}
+    </div>
+
+  </div>
+
+
+  {/* SAVE / CANCEL */}
+
+  {isFamilyEditing && (
+    <div className="mt-5 flex justify-end gap-2">
+
+      <button
+        type="button"
+        onClick={() => {
+          setIsFamilyEditing(false);
+
+          setFamilyForm({
+            father_name: family?.father_name || "",
+            father_occupation: family?.father_occupation || "",
+            mother_name: family?.mother_name || "",
+            mother_occupation: family?.mother_occupation || "",
+            brothers: family?.brothers ?? "",
+            sisters: family?.sisters ?? "",
+            family_type: family?.family_type || "",
+            family_status: family?.family_status || "",
+            family_values: family?.family_values || "",
+            about_family: family?.about_family || "",
+          });
+        }}
+        className="rounded-md border border-[#d7c6b5] px-5 py-2.5 text-[10px] font-semibold text-[#806653] hover:bg-white"
+      >
+        Cancel
+      </button>
+
+      <button
+        type="button"
+        onClick={handleSaveFamily}
+        disabled={savingFamily}
+        className="rounded-md bg-[#8c1d18] px-5 py-2.5 text-[10px] font-semibold text-white hover:bg-[#751712] disabled:opacity-60"
+      >
+        {savingFamily ? "Saving..." : "Save Changes"}
+      </button>
+
+    </div>
+  )}
+
+</div>
 
           {/* PROFILE STATUS */}
 
