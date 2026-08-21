@@ -233,45 +233,56 @@ export const registerUser = async (req, res) => {
     // Create education details
     // -----------------------------
 
-    const {
-      error: educationError,
-    } = await supabase
-      .from("education_details")
-      .insert([
-        {
-          user_id: user.id,
+  const {
+  error: educationError,
+} = await supabase
+.from("education_details")
+.insert([
+  {
+    user_id: user.id,
 
-          highest_qualification:
-            step3.highestQualification || null,
+    highest_qualification:
+      step3.highest_qualification || null,
 
-          specialization:
-            step3.specialization || null,
+    specialization:
+      step3.specialization || null,
 
-          college_name:
-            step3.collegeName || null,
+    college_name:
+      step3.college_name || null,
 
-          university_name:
-            step3.universityName || null,
+    university_name:
+      step3.university_name || null,
 
-          profession:
-            step3.profession || null,
+    profession:
+      step3.profession || null,
 
-          company_name:
-            step3.companyName || null,
+    company_name:
+      step3.company_name || null,
 
-          job_title:
-            step3.jobTitle || null,
+    job_title:
+      step3.job_title || null,
 
-          employment_type:
-            step3.employmentType || null,
+    employment_type:
+      step3.employment_type || null,
 
-          work_location:
-            step3.workLocation || null,
+    work_location:
+      step3.work_location || null,
 
-          annual_income:
-            step3.annualIncome || null,
-        },
-      ]);
+    annual_income:
+      step3.annual_income || null,
+
+    job_experience:
+      step3.job_experience || null,
+
+    certificate:
+      step3.certificate || null,
+
+    years_of_experience:
+      step3.years_of_experience
+        ? Number(step3.years_of_experience)
+        : null,
+  },
+])
 
     if (educationError) {
       console.error(
@@ -560,6 +571,76 @@ export const getCurrentUser = async (req, res) => {
     });
   }
 };
+
+export const updateEducationDetails = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const {
+      highest_qualification,
+      specialization,
+      college_name,
+      university_name,
+      profession,
+      company_name,
+      job_title,
+      employment_type,
+      work_location,
+      annual_income,
+      job_experience,
+      certificate,
+      years_of_experience,
+    } = req.body;
+
+    const { data, error } = await supabase
+      .from("education_details")
+      .update({
+        highest_qualification: highest_qualification || null,
+        specialization: specialization || null,
+        college_name: college_name || null,
+        university_name: university_name || null,
+        profession: profession || null,
+        company_name: company_name || null,
+        job_title: job_title || null,
+        employment_type: employment_type || null,
+        work_location: work_location || null,
+        annual_income: annual_income || null,
+        job_experience: job_experience || null,
+        certificate: certificate || null,
+        years_of_experience:
+          years_of_experience
+            ? Number(years_of_experience)
+            : null,
+      })
+      .eq("user_id", userId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Update education error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to update education details",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Education details updated successfully",
+      education_details: data,
+    });
+
+  } catch (error) {
+    console.error("Update education error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 
 // ======================================================
 // UPDATE CURRENT USER PROFILE

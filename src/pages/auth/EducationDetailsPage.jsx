@@ -14,21 +14,21 @@ const textareaClass =
   "w-full min-h-[75px] px-3 py-2 rounded-[6px] border border-[#f2c65c] bg-white text-[11px] text-[#4b4b4b] placeholder:text-[#a6a6a6] outline-none resize-none focus:border-[#d9272e] focus:ring-1 focus:ring-[#d9272e]/15 transition";
 
 function EducationDetailsPage() {
-  const [formData, setFormData] = useState({
-    education: "",
-    specialization: "",
-    college: "",
-    profession: "",
-    employmentType: "",
-    companyName: "",
-    jobTitle: "",
-    workLocation: "",
-    annualIncome: "",
-    careerDetails: "",
-    jobExperience: "",
-certificate: "",
-yearsOfExperience: "",
-  });
+const [formData, setFormData] = useState({
+  highest_qualification: "",
+  specialization: "",
+  college_name: "",
+  university_name: "",
+  profession: "",
+  company_name: "",
+  job_title: "",
+  employment_type: "",
+  work_location: "",
+  annual_income: "",
+  job_experience: "",
+  certificate: "",
+  years_of_experience: "",
+});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -291,12 +291,12 @@ yearsOfExperience: "",
                     Highest Qualification
                   </label>
 
-                  <select
-                    name="education"
-                    value={formData.education}
-                    onChange={handleChange}
-                    className={selectClass}
-                  >
+                  <select 
+  name="highest_qualification"
+  value={formData.highest_qualification}
+  onChange={handleChange} 
+  className={selectClass} 
+>
 
                     <option value="">
                       Select Qualification
@@ -357,22 +357,44 @@ yearsOfExperience: "",
 
                 {/* COLLEGE */}
 
-                <div className="md:col-span-2">
+               {/* COLLEGE */}
 
-                  <label className={labelClass}>
-                    College / University
-                  </label>
+<div>
 
-                  <input
-                    type="text"
-                    name="college"
-                    value={formData.college}
-                    onChange={handleChange}
-                    placeholder="Enter college or university name"
-                    className={inputClass}
-                  />
+  <label className={labelClass}>
+    College Name
+  </label>
 
-                </div>
+  <input
+    type="text"
+    name="college_name"
+    value={formData.college_name}
+    onChange={handleChange}
+    placeholder="Enter college name"
+    className={inputClass}
+  />
+
+</div>
+
+
+{/* UNIVERSITY */}
+
+<div>
+
+  <label className={labelClass}>
+    University Name
+  </label>
+
+  <input
+    type="text"
+    name="university_name"
+    value={formData.university_name}
+    onChange={handleChange}
+    placeholder="Enter university name"
+    className={inputClass}
+  />
+
+</div>
 
               </div>
 
@@ -464,11 +486,11 @@ yearsOfExperience: "",
                   </label>
 
                   <select
-                    name="employmentType"
-                    value={formData.employmentType}
-                    onChange={handleChange}
-                    className={selectClass}
-                  >
+  name="employment_type"
+  value={formData.employment_type}
+  onChange={handleChange}
+  className={selectClass}
+>
 
                     <option value="">
                       Select Employment Type
@@ -512,13 +534,13 @@ yearsOfExperience: "",
                   </label>
 
                   <input
-                    type="text"
-                    name="companyName"
-                    value={formData.companyName}
-                    onChange={handleChange}
-                    placeholder="Enter company name"
-                    className={inputClass}
-                  />
+  type="text"
+  name="company_name"
+  value={formData.company_name}
+  onChange={handleChange}
+  placeholder="Enter company name"
+  className={inputClass}
+/>
 
                 </div>
 
@@ -533,8 +555,8 @@ yearsOfExperience: "",
 
                   <input
                     type="text"
-                    name="jobTitle"
-                    value={formData.jobTitle}
+                    name="job_title"
+value={formData.job_title}
                     onChange={handleChange}
                     placeholder="e.g. Software Engineer"
                     className={inputClass}
@@ -553,8 +575,8 @@ yearsOfExperience: "",
 
                   <input
                     type="text"
-                    name="workLocation"
-                    value={formData.workLocation}
+                    name="work_location"
+value={formData.work_location}
                     onChange={handleChange}
                     placeholder="City / State"
                     className={inputClass}
@@ -572,8 +594,8 @@ yearsOfExperience: "",
                   </label>
 
                   <select
-                    name="annualIncome"
-                    value={formData.annualIncome}
+                    name="annual_income"
+value={formData.annual_income}
                     onChange={handleChange}
                     className={selectClass}
                   >
@@ -614,6 +636,70 @@ yearsOfExperience: "",
 
                 </div>
 
+
+
+{/* JOB EXPERIENCE */}
+
+<div>
+
+  <label className={labelClass}>
+    Job Experience
+  </label>
+
+  <input
+    type="text"
+    name="job_experience"
+    value={formData.job_experience}
+    onChange={handleChange}
+    placeholder="e.g. Banking, Software, Teaching"
+    className={inputClass}
+  />
+
+</div>
+
+
+{/* YEARS OF EXPERIENCE */}
+
+<div>
+
+  <label className={labelClass}>
+    Years of Experience
+  </label>
+
+  <input
+    type="number"
+    name="years_of_experience"
+    value={formData.years_of_experience}
+    onChange={handleChange}
+    placeholder="e.g. 5"
+    min="0"
+    className={inputClass}
+  />
+
+</div>
+
+
+{/* CERTIFICATE */}
+
+<div className="md:col-span-2">
+
+  <label className={labelClass}>
+    Certificate / Professional Certification
+  </label>
+
+  <input
+    type="text"
+    name="certificate"
+    value={formData.certificate}
+    onChange={handleChange}
+    placeholder="e.g. CA, AWS, Microsoft, Banking Certification"
+    className={inputClass}
+  />
+
+</div>
+
+                
+
               </div>
 
             </div>
@@ -634,12 +720,12 @@ yearsOfExperience: "",
               </label>
 
               <textarea
-                name="careerDetails"
-                value={formData.careerDetails}
-                onChange={handleChange}
-                placeholder="Tell us about your career, work experience or future career plans..."
-                className={textareaClass}
-              />
+  name="job_experience"
+  value={formData.job_experience}
+  onChange={handleChange}
+  placeholder="Tell us about your career, work experience or future career plans..."
+  className={textareaClass}
+/>
 
               <p className="mt-1 text-[9px] text-[#999]">
                 Keep it simple and genuine.

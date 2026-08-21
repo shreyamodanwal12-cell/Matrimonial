@@ -6,6 +6,26 @@ function MyProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 const [isEditing, setIsEditing] = useState(false);
+const [education, setEducation] = useState(null);
+const [savingEducation, setSavingEducation] = useState(false);
+const [isEducationEditing, setIsEducationEditing] = useState(false);
+
+const [educationForm, setEducationForm] = useState({
+  highest_qualification: "",
+  specialization: "",
+  college_name: "",
+  university_name: "",
+  profession: "",
+  company_name: "",
+  job_title: "",
+  employment_type: "",
+  work_location: "",
+  annual_income: "",
+  job_experience: "",
+  certificate: "",
+  years_of_experience: "",
+});
+
 const [matrimonial, setMatrimonial] = useState(null);
 
 const [isMatrimonialEditing, setIsMatrimonialEditing] = useState(false);
@@ -52,6 +72,14 @@ const [familyForm, setFamilyForm] = useState({
   family_values: "",
   about_family: "",
 });
+
+
+
+
+
+
+
+
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
@@ -128,6 +156,42 @@ if (familyData) {
 }
 
 setUser(data.user);
+
+
+setEducation(data.user.education_details || null);
+
+setEducationForm({
+  highest_qualification:
+    data.user.education_details?.highest_qualification || "",
+
+  specialization:
+    data.user.education_details?.specialization || "",
+
+  college_name:
+    data.user.education_details?.college_name || "",
+
+  university_name:
+    data.user.education_details?.university_name || "",
+
+  profession:
+    data.user.education_details?.profession || "",
+
+  company_name:
+    data.user.education_details?.company_name || "",
+
+  job_title:
+    data.user.education_details?.job_title || "",
+
+  employment_type:
+    data.user.education_details?.employment_type || "",
+
+  work_location:
+    data.user.education_details?.work_location || "",
+
+  annual_income:
+    data.user.education_details?.annual_income || "",
+});
+
 setEditForm({
   full_name: data.user.full_name || "",
   mobile: data.user.mobile || "",
@@ -305,6 +369,49 @@ const handleSaveMatrimonial = async () => {
     setSavingMatrimonial(false);
   }
 };
+
+const handleSaveEducation = async () => {
+  console.log("SAVE EDUCATION CLICKED");
+
+  try {
+    setSavingEducation(true);
+
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+      "http://localhost:5000/api/auth/education",
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(educationForm),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.message || "Unable to update education details");
+      return;
+    }
+
+    alert("Education details updated successfully");
+
+    setIsEducationEditing(false);
+
+    // Profile data ko dobara load karne ke liye
+    window.location.reload();
+
+  } catch (error) {
+    console.error("Save education error:", error);
+    alert("Something went wrong");
+  } finally {
+    setSavingEducation(false);
+  }
+};
+
 
 const handleSaveFamily = async () => {
   try {
@@ -716,11 +823,11 @@ const handleSaveFamily = async () => {
    <button
   type="button"
   onClick={handleSaveProfile}
-  className="rounded-md bg-[#8c1d18] px-5 py-2.5 text-[10px] font-semibold text-white hover:bg-[#751712]"
+  disabled={savingProfile}
+  className="rounded-md bg-[#8c1d18] px-5 py-2.5 text-[10px] font-semibold text-white hover:bg-[#751712] disabled:opacity-60"
 >
-  Save Changes
+  {savingProfile ? "Saving..." : "Save Changes"}
 </button>
-
   </div>
 )}
 
@@ -967,56 +1074,7 @@ const handleSaveFamily = async () => {
     </div>
 
 
-    {/* Education */}
-    <div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4">
-      <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
-        Education
-      </p>
 
-      {isMatrimonialEditing ? (
-        <input
-          type="text"
-          value={matrimonialForm.education}
-          onChange={(e) =>
-            setMatrimonialForm({
-              ...matrimonialForm,
-              education: e.target.value,
-            })
-          }
-          className="mt-2 w-full rounded-md border border-[#d7c6b5] px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
-        />
-      ) : (
-        <p className="mt-2 text-[11px] font-medium">
-          {matrimonial?.education || "Not provided"}
-        </p>
-      )}
-    </div>
-
-
-    {/* Profession */}
-    <div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4">
-      <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
-        Profession
-      </p>
-
-      {isMatrimonialEditing ? (
-        <input
-          type="text"
-          value={matrimonialForm.profession}
-          onChange={(e) =>
-            setMatrimonialForm({
-              ...matrimonialForm,
-              profession: e.target.value,
-            })
-          }
-          className="mt-2 w-full rounded-md border border-[#d7c6b5] px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
-        />
-      ) : (
-        <p className="mt-2 text-[11px] font-medium">
-          {matrimonial?.profession || "Not provided"}
-        </p>
-      )}
-    </div>
 
 
     {/* Address */}
@@ -1095,6 +1153,453 @@ const handleSaveFamily = async () => {
   )}
 
 </div>
+
+
+{/* ================= EDUCATION & PROFESSIONAL DETAILS ================= */}
+
+<div className="border-t border-[#eadfce] px-5 py-6 sm:px-8">
+
+  <div className="flex items-center justify-between">
+
+    <div>
+      <h3 className="font-serif text-[19px] font-semibold text-[#4a1712]">
+        Education & Professional Details
+      </h3>
+
+      <p className="mt-1 text-[10px] text-[#9a806f]">
+        Your education and professional information.
+      </p>
+    </div>
+
+    {!isEducationEditing && (
+      <button
+        type="button"
+        onClick={() => setIsEducationEditing(true)}
+        className="rounded-md bg-[#8c1d18] px-4 py-2 text-[9px] font-semibold text-white hover:bg-[#751712]"
+      >
+        Edit
+      </button>
+    )}
+
+  </div>
+
+
+  <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+
+    {/* Highest Qualification */}
+
+    <div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4">
+
+      <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
+        Highest Qualification
+      </p>
+
+      {isEducationEditing ? (
+        <select
+          value={educationForm.highest_qualification}
+          onChange={(e) =>
+            setEducationForm({
+              ...educationForm,
+              highest_qualification: e.target.value,
+            })
+          }
+          className="mt-2 w-full rounded-md border border-[#d7c6b5] bg-white px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
+        >
+          <option value="">Select Qualification</option>
+          <option value="10th">10th</option>
+          <option value="12th">12th</option>
+          <option value="Diploma">Diploma</option>
+          <option value="Graduate">Graduate</option>
+          <option value="Post Graduate">Post Graduate</option>
+          <option value="Doctorate">Doctorate</option>
+          <option value="Other">Other</option>
+        </select>
+      ) : (
+        <p className="mt-2 text-[11px] font-medium text-[#4f3425]">
+         {education?.highest_qualification ||
+  matrimonial?.education ||
+  "Not provided"}
+        </p>
+      )}
+
+    </div>
+
+
+    {/* Specialization */}
+
+    <div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4">
+
+      <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
+        Specialization
+      </p>
+
+      {isEducationEditing ? (
+        <input
+          type="text"
+          value={educationForm.specialization}
+          onChange={(e) =>
+            setEducationForm({
+              ...educationForm,
+              specialization: e.target.value,
+            })
+          }
+          placeholder="e.g. Computer Science"
+          className="mt-2 w-full rounded-md border border-[#d7c6b5] bg-white px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
+        />
+      ) : (
+        <p className="mt-2 text-[11px] font-medium text-[#4f3425]">
+          {education?.specialization || "Not provided"}
+        </p>
+      )}
+
+    </div>
+
+
+    {/* College */}
+
+    {/* College / University */}
+
+<div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4">
+
+  <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
+    College / University
+  </p>
+
+  {isEducationEditing ? (
+    <input
+      type="text"
+      value={educationForm.college_name}
+      onChange={(e) =>
+        setEducationForm({
+          ...educationForm,
+          college_name: e.target.value,
+        })
+      }
+      placeholder="Enter college / university"
+      className="mt-2 w-full rounded-md border border-[#d7c6b5] bg-white px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
+    />
+  ) : (
+    <p className="mt-2 text-[11px] font-medium text-[#4f3425]">
+      {education?.college_name ||
+        education?.university_name ||
+        "Not provided"}
+    </p>
+  )}
+
+</div>
+
+
+    {/* Profession */}
+
+    <div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4">
+
+      <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
+        Profession
+      </p>
+
+      {isEducationEditing ? (
+        <input
+          type="text"
+          value={educationForm.profession}
+          onChange={(e) =>
+            setEducationForm({
+              ...educationForm,
+              profession: e.target.value,
+            })
+          }
+          className="mt-2 w-full rounded-md border border-[#d7c6b5] bg-white px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
+        />
+      ) : (
+        <p className="mt-2 text-[11px] font-medium text-[#4f3425]">
+          {education?.profession || "Not provided"}
+        </p>
+      )}
+
+    </div>
+
+
+   {/* Company */}
+
+<div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4">
+
+  <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
+    Company
+  </p>
+
+  {isEducationEditing ? (
+    <input
+      type="text"
+      value={educationForm.company_name}
+      onChange={(e) =>
+        setEducationForm({
+          ...educationForm,
+          company_name: e.target.value,
+        })
+      }
+      placeholder="Enter company name"
+      className="mt-2 w-full rounded-md border border-[#d7c6b5] bg-white px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
+    />
+  ) : (
+    <p className="mt-2 text-[11px] font-medium text-[#4f3425]">
+      {education?.company_name || "Not provided"}
+    </p>
+  )}
+
+</div>
+
+
+    {/* Job Title */}
+
+<div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4">
+
+  <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
+    Job Title
+  </p>
+
+  {isEducationEditing ? (
+    <input
+      type="text"
+      value={educationForm.job_title}
+      onChange={(e) =>
+        setEducationForm({
+          ...educationForm,
+          job_title: e.target.value,
+        })
+      }
+      placeholder="Enter job title"
+      className="mt-2 w-full rounded-md border border-[#d7c6b5] bg-white px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
+    />
+  ) : (
+    <p className="mt-2 text-[11px] font-medium text-[#4f3425]">
+      {education?.job_title || "Not provided"}
+    </p>
+  )}
+
+</div>
+
+
+    {/* Employment Type */}
+
+<div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4">
+
+  <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
+    Employment Type
+  </p>
+
+  {isEducationEditing ? (
+    <select
+      value={educationForm.employment_type}
+      onChange={(e) =>
+        setEducationForm({
+          ...educationForm,
+          employment_type: e.target.value,
+        })
+      }
+      className="mt-2 w-full rounded-md border border-[#d7c6b5] bg-white px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
+    >
+      <option value="">Select Employment Type</option>
+      <option value="Private">Private</option>
+      <option value="Government">Government</option>
+      <option value="Business">Business</option>
+      <option value="Self Employed">Self Employed</option>
+      <option value="Not Working">Not Working</option>
+      <option value="Student">Student</option>
+    </select>
+  ) : (
+    <p className="mt-2 text-[11px] font-medium text-[#4f3425]">
+      {education?.employment_type || "Not provided"}
+    </p>
+  )}
+
+</div>
+
+
+{/* University Name */}
+
+<div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4">
+
+  <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
+    University Name
+  </p>
+
+  {isEducationEditing ? (
+    <input
+      type="text"
+      value={educationForm.university_name}
+      onChange={(e) =>
+        setEducationForm({
+          ...educationForm,
+          university_name: e.target.value,
+        })
+      }
+      placeholder="Enter university name"
+      className="mt-2 w-full rounded-md border border-[#d7c6b5] bg-white px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
+    />
+  ) : (
+    <p className="mt-2 text-[11px] font-medium text-[#4f3425]">
+      {education?.university_name || "Not provided"}
+    </p>
+  )}
+
+</div>
+
+
+{/* Job Experience */}
+
+<div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4">
+
+  <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
+    Job Experience
+  </p>
+
+  {isEducationEditing ? (
+    <input
+      type="text"
+      value={educationForm.job_experience}
+      onChange={(e) =>
+        setEducationForm({
+          ...educationForm,
+          job_experience: e.target.value,
+        })
+      }
+      placeholder="Enter job experience"
+      className="mt-2 w-full rounded-md border border-[#d7c6b5] bg-white px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
+    />
+  ) : (
+    <p className="mt-2 text-[11px] font-medium text-[#4f3425]">
+      {education?.job_experience || "Not provided"}
+    </p>
+  )}
+
+</div>
+
+
+{/* Certificate */}
+
+<div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4">
+
+  <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
+    Certificate
+  </p>
+
+  {isEducationEditing ? (
+    <input
+      type="text"
+      value={educationForm.certificate}
+      onChange={(e) =>
+        setEducationForm({
+          ...educationForm,
+          certificate: e.target.value,
+        })
+      }
+      placeholder="Enter certificate"
+      className="mt-2 w-full rounded-md border border-[#d7c6b5] bg-white px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
+    />
+  ) : (
+    <p className="mt-2 text-[11px] font-medium text-[#4f3425]">
+      {education?.certificate || "Not provided"}
+    </p>
+  )}
+
+</div>
+
+
+{/* Years of Experience */}
+
+<div className="rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4">
+
+  <p className="text-[8px] font-semibold uppercase tracking-[1px] text-[#a67c35]">
+    Years of Experience
+  </p>
+
+  {isEducationEditing ? (
+    <input
+      type="number"
+      value={educationForm.years_of_experience}
+      onChange={(e) =>
+        setEducationForm({
+          ...educationForm,
+          years_of_experience: e.target.value,
+        })
+      }
+      placeholder="e.g. 5"
+      min="0"
+      className="mt-2 w-full rounded-md border border-[#d7c6b5] bg-white px-3 py-2 text-[11px] outline-none focus:border-[#c58a25]"
+    />
+  ) : (
+    <p className="mt-2 text-[11px] font-medium text-[#4f3425]">
+      {education?.years_of_experience ?? "Not provided"}
+    </p>
+  )}
+
+</div>
+
+
+  {/* SAVE / CANCEL */}
+
+  {isEducationEditing && (
+    <div className="mt-5 flex justify-end gap-2">
+
+      <button
+        type="button"
+        onClick={() => {
+          setIsEducationEditing(false);
+
+          setEducationForm({
+            highest_qualification:
+              education?.highest_qualification || "",
+
+            specialization:
+              education?.specialization || "",
+
+            college_name:
+              education?.college_name || "",
+
+            university_name:
+              education?.university_name || "",
+
+            profession:
+              education?.profession || "",
+
+            company_name:
+              education?.company_name || "",
+
+            job_title:
+              education?.job_title || "",
+
+            employment_type:
+              education?.employment_type || "",
+
+            work_location:
+              education?.work_location || "",
+
+            annual_income:
+              education?.annual_income || "",
+          });
+        }}
+        className="rounded-md border border-[#d7c6b5] px-5 py-2.5 text-[10px] font-semibold text-[#806653]"
+      >
+        Cancel
+      </button>
+
+      <button 
+  type="button" 
+  onClick={handleSaveEducation} 
+  disabled={savingEducation} 
+  className="rounded-md bg-[#8c1d18] px-5 py-2.5 text-[10px] font-semibold text-white hover:bg-[#751712] disabled:opacity-60"
+>
+  {savingEducation ? "Saving..." : "Save Changes"}
+</button>
+
+    </div>
+  )}
+
+</div>
+
+
+
+
 
 {/* ================= FAMILY DETAILS ================= */}
 
@@ -1497,7 +2002,7 @@ const handleSaveFamily = async () => {
         <p className="mt-6 text-center font-serif text-[17px] italic text-[#751b17]">
           “Your beautiful story begins here.”
         </p>
-
+</div>
       </main>
 
     </div>

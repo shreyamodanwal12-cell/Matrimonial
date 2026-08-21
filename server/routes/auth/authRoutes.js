@@ -5,6 +5,7 @@ import {
   loginUser,
   getCurrentUser,
   updateProfile,
+  updateEducationDetails,
 } from "../../controllers/authController.js";
 
 
@@ -19,5 +20,11 @@ router.post("/login", loginUser);
 router.get("/me", authMiddleware, getCurrentUser);
 
 router.put("/profile", authMiddleware, updateProfile);
+
+router.put(
+  "/education",
+  authMiddleware,
+  updateEducationDetails
+);
 
 export default router;

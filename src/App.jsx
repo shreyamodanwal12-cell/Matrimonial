@@ -1,4 +1,3 @@
-
 import AdminLayout from "./pages/admin/AdminLayout";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/auth/LoginPage";
@@ -17,7 +16,7 @@ import FamilyDetailsPage from "./pages/auth/FamilyDetailsPage";
 import EducationDetailsPage from "./pages/auth/EducationDetailsPage";
 import LifestylePage from "./pages/auth/LifestylePage";
 import MyProfilePage from "./pages/MyProfilePage";
-
+import MyMembershipPage from "./pages/MyMembershipPage";
 
 function App() {
   const path = window.location.pathname;
@@ -53,6 +52,9 @@ if (path === "/register/lifestyle") {
   if (path === "/payment-success") {
     return <PaymentSuccessPage />;
   }
+  if (path === "/my-membership") {
+  return <MyMembershipPage />;
+}
 if (path === "/profile") {
   return <MyProfilePage />;
 }

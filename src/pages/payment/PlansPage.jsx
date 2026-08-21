@@ -265,16 +265,24 @@ function PlansPage() {
 
           {/* Pay Now */}
           <button
-            type="button"
-            onClick={() => {
-              alert(
-                `Payment UI ready for ${selected.name} Plan. Actual payment gateway will be connected later.`
-              );
-            }}
-            className="mt-5 flex h-12 w-full items-center justify-center rounded-lg bg-[#d92c2c] text-[11px] font-semibold text-white shadow-[0_7px_18px_rgba(217,44,44,0.18)] transition hover:-translate-y-0.5 hover:bg-[#bd2020]"
-          >
-            Continue to Payment →
-          </button>
+  type="button"
+  onClick={() => {
+    localStorage.setItem(
+      "selectedPlan",
+      JSON.stringify({
+        id: selected.id,
+        name: selected.name,
+        duration: selected.duration,
+        price: selected.price,
+      })
+    );
+
+    window.location.href = "/payment";
+  }}
+  className="mt-5 flex h-12 w-full items-center justify-center rounded-lg bg-[#d92c2c] text-[11px] font-semibold text-white shadow-[0_7px_18px_rgba(217,44,44,0.18)] transition hover:-translate-y-0.5 hover:bg-[#bd2020]"
+>
+  Continue to Payment →
+</button>
 
           <p className="mt-3 text-center text-[8px] text-[#a28c7c]">
             🔒 Secure payment • Your information is protected

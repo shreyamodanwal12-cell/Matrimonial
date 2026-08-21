@@ -1,14 +1,36 @@
 import { useState } from "react";
-
+import API_BASE_URL from "../../api/api";
 function PaymentPage() {
   const [paymentMethod, setPaymentMethod] = useState("upi");
 
-  const selectedPlan = {
-    name: "Premium",
-    duration: "3 Months",
-    price: 999,
-  };
+  const selectedPlan = JSON.parse(
+  localStorage.getItem("selectedPlan") || "null"
+);
+if (!selectedPlan) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#fffaf4]">
+      <div className="text-center">
+        <h2 className="font-serif text-2xl font-semibold text-[#8c1d18]">
+          No Plan Selected
+        </h2>
 
+        <p className="mt-2 text-sm text-[#806653]">
+          Please select a membership plan first.
+        </p>
+
+        <button
+          type="button"
+          onClick={() => {
+            window.location.href = "/plans";
+          }}
+          className="mt-5 rounded-lg bg-[#8c1d18] px-5 py-3 text-sm text-white"
+        >
+          Choose Plan
+        </button>
+      </div>
+    </div>
+  );
+}
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -22,13 +44,61 @@ function PaymentPage() {
     });
   };
 
-  const handlePayment = (e) => {
-    e.preventDefault();
+ const handlePayment = async (e) => {
+  e.preventDefault();
 
-    alert(
-      "Payment UI is ready. Actual payment gateway will be connected later."
+  try {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("Please login first.");
+      window.location.href = "/login";
+      return;
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/payment/create`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          planId: selectedPlan.id,
+          planName: selectedPlan.name,
+          duration: selectedPlan.duration,
+          price: selectedPlan.price,
+          customerName: formData.name,
+          customerEmail: formData.email,
+          customerMobile: formData.mobile,
+        }),
+      }
     );
-  };
+
+    const data = await response.json();
+
+    console.log("Payment Create Response:", data);
+
+    if (!response.ok || !data.success) {
+      alert(data.message || "Unable to create payment.");
+      return;
+    }
+
+    if (!data.checkoutUrl) {
+      alert("PhonePe checkout URL not received.");
+      return;
+    }
+
+    // PhonePe checkout page open
+    window.location.href = data.checkoutUrl;
+
+  } catch (error) {
+    console.error("Payment Error:", error);
+
+    alert("Something went wrong while creating payment.");
+  }
+};
 
   return (
     <div className="min-h-screen bg-[#fffaf4] text-[#3c2415]">

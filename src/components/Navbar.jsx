@@ -3,7 +3,7 @@ import { useState } from "react";
 
 function Navbar() {
   const [open, setOpen] = useState(false);
-
+const [accountOpen, setAccountOpen] = useState(false);
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user") || "null");
 
@@ -73,15 +73,57 @@ function Navbar() {
             Contact
           </a>
 
+
+
+
+
           {/* Logged In */}
           {token && user ? (
             <>
-              <a
-                href="/profile"
-                className="rounded-md px-4 py-2 text-[13px] font-medium text-[#8c1d18] transition hover:bg-[#f7ead6]"
-              >
-                My Profile
-              </a>
+             <div className="relative">
+
+  <button
+    type="button"
+    onClick={() => setAccountOpen(!accountOpen)}
+    className="flex items-center gap-1 rounded-md px-4 py-2 text-[13px] font-medium text-[#8c1d18] transition hover:bg-[#f7ead6]"
+  >
+    Account
+    <span className="text-[10px]">
+      {accountOpen ? "▲" : "▼"}
+    </span>
+  </button>
+
+  {accountOpen && (
+    <div className="absolute right-0 top-full mt-2 w-44 rounded-lg border border-[#ead8bd] bg-white py-2 shadow-lg">
+
+      <a
+        href="/profile"
+        className="block px-4 py-2 text-[13px] text-[#563927] hover:bg-[#fff5e8]"
+        onClick={() => setAccountOpen(false)}
+      >
+        My Profile
+      </a>
+
+      <a
+        href="/plans"
+        className="block px-4 py-2 text-[13px] text-[#563927] hover:bg-[#fff5e8]"
+        onClick={() => setAccountOpen(false)}
+      >
+        Plans
+      </a>
+
+      <a
+        href="/my-membership"
+        className="block px-4 py-2 text-[13px] text-[#563927] hover:bg-[#fff5e8]"
+        onClick={() => setAccountOpen(false)}
+      >
+        My Membership
+      </a>
+
+    </div>
+  )}
+
+</div>
 
               <button
                 type="button"
@@ -168,17 +210,68 @@ function Navbar() {
             >
               Contact
             </a>
+<a
+  href="/plans"
+  onClick={() => setOpen(false)}
+  className="text-sm font-medium text-[#8c1d18]"
+>
+  Plans
+</a>
 
+<a
+  href="/my-membership"
+  onClick={() => setOpen(false)}
+  className="text-sm font-medium text-[#8c1d18]"
+>
+  My Membership
+</a>
             {/* Mobile Logged In */}
             {token && user ? (
               <>
-                <a
-                  href="/profile"
-                  onClick={() => setOpen(false)}
-                  className="text-sm font-medium text-[#8c1d18]"
-                >
-                  My Profile
-                </a>
+                <div className="relative">
+
+  <button
+    type="button"
+    onClick={() => setAccountOpen(!accountOpen)}
+    className="flex items-center gap-1 rounded-md px-4 py-2 text-[13px] font-medium text-[#8c1d18] transition hover:bg-[#f7ead6]"
+  >
+    Account
+    <span className="text-[10px]">
+      {accountOpen ? "▲" : "▼"}
+    </span>
+  </button>
+
+  {accountOpen && (
+    <div className="absolute right-0 top-full mt-2 w-44 rounded-lg border border-[#ead8bd] bg-white py-2 shadow-lg">
+
+      <a
+        href="/profile"
+        className="block px-4 py-2 text-[13px] text-[#563927] hover:bg-[#fff5e8]"
+        onClick={() => setAccountOpen(false)}
+      >
+        My Profile
+      </a>
+
+      <a
+        href="/plans"
+        className="block px-4 py-2 text-[13px] text-[#563927] hover:bg-[#fff5e8]"
+        onClick={() => setAccountOpen(false)}
+      >
+        Plans
+      </a>
+
+      <a
+        href="/my-membership"
+        className="block px-4 py-2 text-[13px] text-[#563927] hover:bg-[#fff5e8]"
+        onClick={() => setAccountOpen(false)}
+      >
+        My Membership
+      </a>
+
+    </div>
+  )}
+
+</div>
 
                 <button
                   type="button"
