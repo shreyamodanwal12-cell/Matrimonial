@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-
+import API_BASE_URL from "../api/api";
 function MyMembershipPage() {
   const [membership, setMembership] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -11,13 +11,13 @@ function MyMembershipPage() {
         const token = localStorage.getItem("token");
 
         const response = await fetch(
-          "http://localhost:5000/api/membership/my",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+  `${API_BASE_URL}/api/membership/my`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+);
 
         const data = await response.json();
 
