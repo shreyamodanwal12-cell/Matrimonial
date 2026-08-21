@@ -20,8 +20,7 @@ export const createPayment = async (req, res) => {
     const merchantOrderId = `MATRI_${randomUUID()}`;
 
     const redirectUrl =
-      `http://localhost:5173/payment-success?orderId=${merchantOrderId}`;
-
+  `https://matrimonial-alpha.vercel.app/payment-success?orderId=${merchantOrderId}`;
 
     // ==================================================
     // 1. Pehle pending payment database mein create karo
