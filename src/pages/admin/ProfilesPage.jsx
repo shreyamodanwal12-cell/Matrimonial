@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-
+import API_BASE_URL from "../../api/api";
 function ProfilesPage() {
   const [search, setSearch] = useState("");
 const [status, setStatus] = useState("All");
@@ -21,12 +21,13 @@ useEffect(() => {
       const token = localStorage.getItem("token");
 
 const response = await fetch(
-  "http://localhost:5000/api/profiles",
+  `${API_BASE_URL}/api/profiles`,
   {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   }
+
 );
 
       const data = await response.json();
@@ -54,9 +55,7 @@ const updateProfileStatus = async (profileId, newStatus) => {
 
     const token = localStorage.getItem("token");
 
-    const response = await fetch(
-      `http://localhost:5000/api/profiles/${profileId}/status`,
-      {
+    const response = await fetch(`${API_BASE_URL}/api/profiles/${profileId}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -639,16 +638,22 @@ const filteredProfiles = profiles.filter((profile) => {
                   </p>
                 </div>
 
-                <div className="rounded-lg border border-[#eadfce] p-3">
-                  <p className="text-[8px] uppercase tracking-[1px] text-[#a67c35]">
-                    Registered
-                  </p>
-                  <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
-                    {selectedProfile.matrimonial_profiles?.education ||
-  selectedProfile.education_details?.highest_qualification ||
-  "Not specified"}
-                  </p>
-                </div>
+                {/* Registered */}
+<div className="rounded-lg border border-[#eadfce] p-3">
+  <p className="text-[8px] uppercase tracking-[1px] text-[#a67c35]">
+    Registered
+  </p>
+
+  <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
+    {selectedProfile.created_at
+      ? new Date(selectedProfile.created_at).toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : "Not available"}
+  </p>
+</div>
 
                 <div className="rounded-lg border border-[#eadfce] p-3">
                   <p className="text-[8px] uppercase tracking-[1px] text-[#a67c35]">

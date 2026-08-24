@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from "react";
+import API_BASE_URL from "../api/api";
 
 function MyProfilePage() {
   const [user, setUser] = useState(null);
@@ -9,6 +10,7 @@ const [isEditing, setIsEditing] = useState(false);
 const [education, setEducation] = useState(null);
 const [savingEducation, setSavingEducation] = useState(false);
 const [isEducationEditing, setIsEducationEditing] = useState(false);
+const [savingProfile, setSavingProfile] = useState(false);
 
 const [educationForm, setEducationForm] = useState({
   highest_qualification: "",
@@ -91,14 +93,14 @@ const [familyForm, setFamilyForm] = useState({
         }
 
         const response = await fetch(
-          "http://localhost:5000/api/auth/me",
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+  `${API_BASE_URL}/api/auth/me`,
+  {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+);
 
         const data = await response.json();
 
@@ -225,7 +227,7 @@ const handleSaveProfile = async () => {
     }
 
     const response = await fetch(
-      "http://localhost:5000/api/auth/profile",
+      `${API_BASE_URL}/api/profiles/photo`,
       {
         method: "PUT",
         headers: {
@@ -289,7 +291,7 @@ const handlePhotoUpload = async (e) => {
     formData.append("photo", file);
 
     const response = await fetch(
-      "http://localhost:5000/api/profiles/photo",
+      `${API_BASE_URL}/api/profiles/photo`,
       {
         method: "POST",
         headers: {
@@ -340,7 +342,7 @@ const handleSaveMatrimonial = async () => {
     const token = localStorage.getItem("token");
 
     const response = await fetch(
-      "http://localhost:5000/api/profiles/matrimonial",
+      `${API_BASE_URL}/api/profiles/matrimonial`,
       {
         method: "PUT",
         headers: {
@@ -379,8 +381,8 @@ const handleSaveEducation = async () => {
     const token = localStorage.getItem("token");
 
     const response = await fetch(
-      "http://localhost:5000/api/auth/education",
-      {
+  `${API_BASE_URL}/api/auth/education`,
+  {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -420,7 +422,7 @@ const handleSaveFamily = async () => {
     const token = localStorage.getItem("token");
 
     const response = await fetch(
-      "http://localhost:5000/api/profiles/family",
+      `${API_BASE_URL}/api/profiles/family`,
       {
         method: "PUT",
         headers: {
