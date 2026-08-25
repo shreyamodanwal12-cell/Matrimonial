@@ -1,4 +1,6 @@
 import express from "express";
+import { getPublicProfile } from "../controllers/profileController.js";
+
 import {
   getAllProfiles,
   uploadProfilePhoto,
@@ -13,8 +15,8 @@ import upload from "../middleware/uploadMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", authMiddleware, getAllProfiles);
-
+router.get("/", getAllProfiles);
+router.get("/:userId", getPublicProfile);
 router.post(
   "/photo",
   authMiddleware,

@@ -80,7 +80,7 @@ export const getAllProfiles = async (req, res) => {
         )
       `)
       .eq("role", "user")
-      .order("created_at", { ascending: false });
+  .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Get profiles error:", error);
@@ -481,6 +481,180 @@ export const updateMyFamilyDetails = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Internal server error",
+    });
+  }
+};
+
+
+
+export const getPublicProfile = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    // =========================
+    // USER BASIC DETAILS
+    // =========================
+    const { data: user, error: userError } = await supabase
+      .from("users")
+      .select(`
+        id,
+        full_name,
+        profile_photo,
+        profile_status,
+        created_at
+      `)
+      .eq("id", userId)
+      .eq("role", "user")
+      .eq("is_active", true)
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({
+        success: false,
+        message: "Profile not found",
+      });
+    }
+
+    // =========================
+    // MATRIMONIAL DETAILS
+    // =========================
+    const { data: matrimonial, error: matrimonialError } =
+      await supabase
+        .from("matrimonial_profiles")
+        .select(`
+          profile_for,
+          gender,
+          birth_date,
+          birth_time,
+          birth_place,
+          marital_status,
+          address,
+          religion,
+          caste,
+          sub_caste,
+          mother_tongue,
+          state,
+          native_place,
+          education,
+          profession,
+          annual_income,
+          employment_type,
+          job_details
+        `)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+    if (matrimonialError) {
+      console.error("Matrimonial Details Error:", matrimonialError);
+    }
+
+    // =========================
+    // EDUCATION DETAILS
+    // =========================
+    const { data: education, error: educationError } =
+      await supabase
+        .from("education_details")
+        .select(`
+          highest_qualification,
+          specialization,
+          college_name,
+          university_name,
+          profession,
+          company_name,
+          job_title,
+          employment_type,
+          work_location,
+          annual_income,
+          job_experience,
+          years_of_experience,
+          certificate
+        `)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+    if (educationError) {
+      console.error("Education Details Error:", educationError);
+    }
+
+    // =========================
+    // FAMILY DETAILS
+    // =========================
+    const { data: family, error: familyError } =
+      await supabase
+        .from("family_details")
+        .select(`
+          father_name,
+          father_occupation,
+          mother_name,
+          mother_occupation,
+          brothers,
+          sisters,
+          family_type,
+          family_status,
+          family_values,
+          about_family
+        `)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+    if (familyError) {
+      console.error("Family Details Error:", familyError);
+    }
+
+    // =========================
+    // LIFESTYLE DETAILS
+    // =========================
+    const { data: lifestyle, error: lifestyleError } =
+      await supabase
+        .from("lifestyle_preferences")
+        .select(`
+          diet,
+          smoking,
+          drinking,
+          hobbies,
+          interests,
+          partner_age_from,
+          partner_age_to,
+          partner_education,
+          partner_profession,
+          partner_religion,
+          partner_location
+        `)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+    if (lifestyleError) {
+      console.error("Lifestyle Details Error:", lifestyleError);
+    }
+
+    // =========================
+    // FINAL PUBLIC PROFILE
+    // =========================
+    return res.status(200).json({
+      success: true,
+
+      profile: {
+        user,
+        matrimonial: matrimonial || {},
+        education: education || {},
+        family: family || {},
+        lifestyle: lifestyle || {},
+      },
+    });
+
+  } catch (error) {
+    console.error("Public Profile Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to fetch public profile",
     });
   }
 };

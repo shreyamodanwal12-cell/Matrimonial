@@ -17,6 +17,8 @@ import EducationDetailsPage from "./pages/auth/EducationDetailsPage";
 import LifestylePage from "./pages/auth/LifestylePage";
 import MyProfilePage from "./pages/MyProfilePage";
 import MyMembershipPage from "./pages/MyMembershipPage";
+import PublicProfilePage from "./pages/PublicProfilePage";
+import ChatPage from "./pages/chat/ChatPage";
 
 function App() {
   const path = window.location.pathname;
@@ -55,8 +57,14 @@ if (path === "/register/lifestyle") {
   if (path === "/my-membership") {
   return <MyMembershipPage />;
 }
+if (path.startsWith("/public-profile/")) {
+  return <PublicProfilePage />;
+}
 if (path === "/profile") {
   return <MyProfilePage />;
+}
+if (path.startsWith("/chat")) {
+  return <ChatPage />;
 }
   // ================================
   // ADMIN PROTECTION

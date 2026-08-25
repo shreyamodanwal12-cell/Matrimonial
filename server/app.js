@@ -5,6 +5,7 @@ import adminRoutes from "./routes/admin/adminRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import membershipRoutes from "./routes/membershipRoutes.js";
+import chatRoutes from "./routes/chatRoutes.js";
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/profiles", profileRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/membership", membershipRoutes);
+app.use("/api/chat", chatRoutes);
 // app.get("/", (req, res) => {
 //   res.json({
 //     success: true,
