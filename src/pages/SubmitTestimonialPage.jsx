@@ -62,9 +62,7 @@ console.log("Rating being sent:", Number(formData.rating));
         );
       }
 
-      setSuccess(
-        "Thank you! Your success story has been submitted."
-      );
+      alert("Thank you! Your success story has been submitted.");
 
       setFormData({
         name: "",

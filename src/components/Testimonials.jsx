@@ -157,7 +157,7 @@ useEffect(() => {
           </p>
 
           <a
-            href="/register"
+            href="/submit-testimonial"
             className="
               mt-5
               inline-flex
