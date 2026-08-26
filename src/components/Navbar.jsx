@@ -58,7 +58,12 @@ const [accountOpen, setAccountOpen] = useState(false);
           >
             About Us
           </a>
-
+<a
+  href="/chairman"
+  className="text-[13px] font-medium text-[#563927] transition hover:text-[#9b261f]"
+>
+  About Chairman
+</a>
           <a
             href="#how"
             className="text-[13px] font-medium text-[#563927] transition hover:text-[#9b261f]"
@@ -194,7 +199,13 @@ const [accountOpen, setAccountOpen] = useState(false);
             >
               About Us
             </a>
-
+<a
+  href="/chairman"
+  onClick={() => setOpen(false)}
+  className="text-sm text-[#563927]"
+>
+  About Chairman
+</a>
             <a
               href="#how"
               onClick={() => setOpen(false)}

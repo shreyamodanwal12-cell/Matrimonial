@@ -37,6 +37,11 @@ function AdminSidebar() {
       path: "/admin/reports",
     },
     {
+  label: "Testimonials",
+  icon: "⭐",
+  path: "/admin/testimonials",
+},
+    {
       label: "Settings",
       icon: "⚙️",
       path: "/admin/settings",

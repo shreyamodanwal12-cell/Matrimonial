@@ -1,25 +1,35 @@
+import { useEffect, useState } from "react";
+import API_BASE_URL from "../api/api";
 function Testimonials() {
-  const testimonials = [
-    {
-      name: "Priya & Rahul",
-      location: "Bangalore",
-      message:
-        "We found each other through Shiva Parvati Matrimonial. The experience was simple, respectful and helped our families connect beautifully.",
-    },
-    {
-      name: "Anjali & Karthik",
-      location: "Hyderabad",
-      message:
-        "The profiles felt genuine and the platform was very easy to use. We are grateful for the wonderful beginning of our journey together.",
-    },
-    {
-      name: "Sneha & Arjun",
-      location: "Gulbarga",
-      message:
-        "What started as a simple profile search turned into a beautiful relationship. Thank you for helping us find each other.",
-    },
-  ];
+  const [testimonials, setTestimonials] = useState([]);
+const [loading, setLoading] = useState(true);
 
+useEffect(() => {
+  const fetchTestimonials = async () => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/testimonials`
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || "Unable to fetch testimonials"
+        );
+      }
+
+      setTestimonials(data.testimonials || []);
+    } catch (error) {
+      console.error("Testimonials Error:", error);
+      setTestimonials([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchTestimonials();
+}, []);
   return (
     <section className="bg-[#f8ead5] px-4 py-16 sm:py-20">
       <div className="mx-auto max-w-[1180px]">
@@ -44,11 +54,25 @@ function Testimonials() {
 
 
         {/* Testimonials */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        {/* Testimonials */}
 
-          {testimonials.map((testimonial) => (
-            <div
-              key={testimonial.name}
+{loading ? (
+  <div className="py-10 text-center">
+    <p className="text-sm text-[#806653]">
+      Loading success stories...
+    </p>
+  </div>
+) : testimonials.length === 0 ? (
+  <div className="py-10 text-center">
+    <p className="text-sm text-[#806653]">
+      No success stories available yet.
+    </p>
+  </div>
+) : (
+  <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+
+          {testimonials.map((testimonial, index) => (
+  <div key={`${testimonial.name}-${index}`}
               className="
                 group
                 relative
@@ -72,10 +96,20 @@ function Testimonials() {
 
 
               {/* Stars */}
-              <div className="mb-4 flex gap-1 text-[13px] text-[#d7a744]">
-                ★ ★ ★ ★ ★
-              </div>
-
+             <div className="mb-4 flex gap-1 text-[13px]">
+  {[1, 2, 3, 4, 5].map((star) => (
+    <span
+      key={star}
+      className={
+        star <= Number(testimonial.rating)
+          ? "text-[#d7a744]"
+          : "text-[#c9b9a5]"
+      }
+    >
+      ★
+    </span>
+  ))}
+</div>
 
               {/* Message */}
               <p className="relative z-10 text-[12px] leading-7 text-[#665044]">
@@ -109,10 +143,11 @@ function Testimonials() {
               </div>
 
             </div>
+            
           ))}
 
         </div>
-
+)}
 
         {/* Bottom Message */}
         <div className="mt-10 text-center">

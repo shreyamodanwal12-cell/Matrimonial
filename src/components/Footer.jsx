@@ -70,7 +70,12 @@ function Footer() {
               >
                 About Us
               </a>
-
+<a
+  href="/chairman"
+  className="w-fit text-[11px] text-[#d8bfae] transition hover:text-[#f5c45e]"
+>
+  About Chairman
+</a>
               <a
                 href="#how"
                 className="w-fit text-[11px] text-[#d8bfae] transition hover:text-[#f5c45e]"
@@ -97,40 +102,63 @@ function Footer() {
               Contact Us
             </h3>
 
-            <div className="mt-4 flex flex-col gap-3">
+            <div className="mt-4 flex flex-col gap-4">
 
-              <div className="flex gap-3">
+              {/* Phone */}
+              <div className="flex items-start gap-3">
 
-                <span className="text-[#f5c45e]">
+                <span className="mt-0.5 text-[#f5c45e]">
+                  ☎
+                </span>
+
+                <div className="text-[11px] leading-5 text-[#d8bfae]">
+                  <a
+                    href="tel:9632592555"
+                    className="block hover:text-[#f5c45e]"
+                  >
+                    9632592555
+                  </a>
+
+                  <a
+                    href="tel:9448388711"
+                    className="block hover:text-[#f5c45e]"
+                  >
+                    9448388711
+                  </a>
+                </div>
+
+              </div>
+
+
+              {/* Email */}
+              <div className="flex items-start gap-3">
+
+                <span className="mt-0.5 text-[#f5c45e]">
+                  ✉
+                </span>
+
+                <a
+                  href="mailto:support@shivaparvatimatrimonialgulburga.com"
+                  className="break-all text-[11px] leading-5 text-[#d8bfae] hover:text-[#f5c45e]"
+                >
+                  support@shivaparvatimatrimonialgulburga.com
+                </a>
+
+              </div>
+
+
+              {/* Address */}
+              <div className="flex items-start gap-3">
+
+                <span className="mt-0.5 text-[#f5c45e]">
                   📍
                 </span>
 
                 <p className="text-[11px] leading-5 text-[#d8bfae]">
-                  Gulbarga, Karnataka
-                </p>
-
-              </div>
-
-              <div className="flex gap-3">
-
-                <span className="text-[#f5c45e]">
-                  ✉
-                </span>
-
-                <p className="text-[11px] leading-5 text-[#d8bfae]">
-                  support@shivaparvati.com
-                </p>
-
-              </div>
-
-              <div className="flex gap-3">
-
-                <span className="text-[#f5c45e]">
-                  ☎
-                </span>
-
-                <p className="text-[11px] leading-5 text-[#d8bfae]">
-                  +91 XXXXX XXXXX
+                  Ashwini Nivas, Plot No. 213/1,
+                  NGO&apos;S Colony, New Jewargi Road,
+                  Opp. Old Venkatagiri Hotel &amp; Kalmeshwar,
+                  Kalaburagi - 585102, Karnataka
                 </p>
 
               </div>
@@ -140,7 +168,7 @@ function Footer() {
           </div>
 
 
-          {/* Social / CTA */}
+          {/* CTA */}
           <div>
 
             <h3 className="font-serif text-[20px] font-semibold text-[#f5c45e]">
@@ -183,26 +211,34 @@ function Footer() {
         <div className="flex flex-col items-center justify-between gap-3 py-5 text-center sm:flex-row sm:text-left">
 
           <p className="text-[10px] text-[#bfa494]">
-            © {new Date().getFullYear()} Shiva Parvati Matrimonial. All rights reserved.
+            © {new Date().getFullYear()} Shiva Parvati Matrimonial.
+            All rights reserved.
           </p>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:justify-end">
 
-            <a
-              href="#"
-              className="text-[10px] text-[#bfa494] transition hover:text-[#f5c45e]"
-            >
-              Privacy Policy
-            </a>
+  <a
+    href="/privacy-policy"
+    className="text-[10px] text-[#bfa494] transition hover:text-[#f5c45e]"
+  >
+    Privacy Policy
+  </a>
 
-            <a
-              href="#"
-              className="text-[10px] text-[#bfa494] transition hover:text-[#f5c45e]"
-            >
-              Terms & Conditions
-            </a>
+  <a
+    href="/terms"
+    className="text-[10px] text-[#bfa494] transition hover:text-[#f5c45e]"
+  >
+    Terms &amp; Conditions
+  </a>
 
-          </div>
+  <a
+    href="/refund-policy"
+    className="text-[10px] text-[#bfa494] transition hover:text-[#f5c45e]"
+  >
+    Refund Policy
+  </a>
+
+</div>
 
         </div>
 

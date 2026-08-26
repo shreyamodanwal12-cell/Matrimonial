@@ -19,6 +19,12 @@ import MyProfilePage from "./pages/MyProfilePage";
 import MyMembershipPage from "./pages/MyMembershipPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
 import ChatPage from "./pages/chat/ChatPage";
+import ChairmanPage from "./pages/ChairmanPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsPage from "./pages/TermsPage";
+import RefundPolicyPage from "./pages/RefundPolicyPage";
+import SubmitTestimonialPage from "./pages/SubmitTestimonialPage";
+import AdminTestimonialsPage from "./pages/admin/AdminTestimonialsPage";
 
 function App() {
   const path = window.location.pathname;
@@ -32,6 +38,9 @@ function App() {
   if (path === "/register") {
     return <RegisterPage />;
   }
+  if (path === "/chairman") {
+  return <ChairmanPage />;
+}
 if (path === "/register/family") {
   return <FamilyDetailsPage />;
 }
@@ -65,6 +74,20 @@ if (path === "/profile") {
 }
 if (path.startsWith("/chat")) {
   return <ChatPage />;
+}
+if (path === "/privacy-policy") {
+  return <PrivacyPolicyPage />;
+}
+
+if (path === "/terms") {
+  return <TermsPage />;
+}
+
+if (path === "/refund-policy") {
+  return <RefundPolicyPage />;
+}
+if (path === "/submit-testimonial") {
+  return <SubmitTestimonialPage />;
 }
   // ================================
   // ADMIN PROTECTION
@@ -185,6 +208,22 @@ if (path.startsWith("/chat")) {
       </AdminLayout>
     );
   }
+
+  // Admin Testimonials
+if (path === "/admin/testimonials") {
+  if (!isAdmin) {
+    window.location.href = "/login";
+    return null;
+  }
+
+  return (
+    <AdminLayout>
+      <AdminTestimonialsPage />
+    </AdminLayout>
+  );
+}
+
+
 
   return <HomePage />;
 }

@@ -6,7 +6,7 @@ import profileRoutes from "./routes/profileRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import membershipRoutes from "./routes/membershipRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
-
+import testimonialRoutes from "./routes/testimonialRoutes.js";
 const app = express();
 
 app.use(
@@ -26,6 +26,7 @@ app.use("/api/profiles", profileRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/membership", membershipRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/testimonials", testimonialRoutes);
 // app.get("/", (req, res) => {
 //   res.json({
 //     success: true,

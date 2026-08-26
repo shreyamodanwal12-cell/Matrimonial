@@ -16,7 +16,7 @@ import upload from "../middleware/uploadMiddleware.js";
 const router = express.Router();
 
 router.get("/", getAllProfiles);
-router.get("/:userId", getPublicProfile);
+router.get("/:userId", authMiddleware, getPublicProfile);
 router.post(
   "/photo",
   authMiddleware,
