@@ -5,138 +5,21 @@ function PublicProfilePage() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-const [membershipLoading, setMembershipLoading] = useState(false);
-const [hasMembership, setHasMembership] = useState(false);
+
   const userId = window.location.pathname.split("/").pop();
  const token = localStorage.getItem("token");
 
-    if (!token) {
-      window.location.href = "/login";
-      return false;
-    }
 
-
-if (membershipLoading) {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-[#fffaf2]">
-      <p className="text-[#806653]">
-        Checking membership...
-      </p>
-    </div>
-  );
-}
-if (!hasMembership) {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-[#fffaf2] px-5">
-      <div className="w-full max-w-[500px] rounded-2xl border border-[#ead8bd] bg-white p-8 text-center shadow-[0_10px_35px_rgba(73,38,20,0.08)]">
-
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#fff3dc] text-2xl">
-          🔒
-        </div>
-
-        <h2 className="mt-5 font-serif text-3xl font-semibold text-[#751b17]">
-          Membership Required
-        </h2>
-
-        <p className="mt-3 text-sm leading-6 text-[#806653]">
-          Please choose a membership plan to view complete matrimonial profiles.
-        </p>
-
-        <button
-          type="button"
-          onClick={() => {
-            window.location.href = "/plans";
-          }}
-          className="mt-6 w-full rounded-lg bg-[#8c1d18] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#751712]"
-        >
-          Choose Membership
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            window.history.back();
-          }}
-          className="mt-3 w-full rounded-lg border border-[#8c1d18] px-5 py-3 text-sm font-semibold text-[#8c1d18]"
-        >
-          ← Go Back
-        </button>
-
-      </div>
-    </div>
-  );
-}
  useEffect(() => {
-  const checkAccess = async () => {
-    setMembershipLoading(true);
-
-    const active = await checkMembership();
-
-    setHasMembership(active);
-    setMembershipLoading(false);
-
-    if (active) {
-      fetchPublicProfile();
-    }
-  };
-
-  checkAccess();
+  fetchPublicProfile();
 }, []);
-const checkMembership = async () => {
-  try {
-    const token = localStorage.getItem("token");
 
-    if (!token) {
-      window.location.href = "/login";
-      return false;
-    }
-
-    const response = await fetch(
-      `${API_BASE_URL}/api/membership/my`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    if (response.status === 404) {
-      return false;
-    }
-
-    const data = await response.json();
-
-    if (!response.ok || !data.success) {
-      return false;
-    }
-
-    const membership = data.membership;
-
-    if (
-      membership?.status === "ACTIVE" &&
-      new Date(membership.end_date) >= new Date()
-    ) {
-      return true;
-    }
-
-    return false;
-
-  } catch (error) {
-    console.error("Membership Check Error:", error);
-    return false;
-  }
-};
   const fetchPublicProfile = async () => {
     try {
       setLoading(true);
       setError("");
 
-     const token = localStorage.getItem("token");
-
-if (!token) {
-  window.location.href = "/login";
-  return;
-}
+    
 
 const response = await fetch(
   `${API_BASE_URL}/api/profiles/${userId}`,
@@ -148,10 +31,7 @@ const response = await fetch(
 );
 
       const data = await response.json();
-if (response.status === 403 && data.requiresMembership) {
-      window.location.href = "/plans";
-      return;
-    }
+
       if (!response.ok || !data.success) {
         throw new Error(
           data.message || "Unable to load profile"

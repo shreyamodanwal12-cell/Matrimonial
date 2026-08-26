@@ -13,37 +13,29 @@ const [updatingStatus, setUpdatingStatus] = useState(false);
 
 
 useEffect(() => {
-  const fetchProfiles = async () => {
-    try {
-      setLoading(true);
-      setError("");
+const fetchProfiles = async () => {
+  try {
+    setError("");
 
-      const token = localStorage.getItem("token");
+    const response = await fetch(
+      `${API_BASE_URL}/api/profiles`
+    );
 
-const response = await fetch(
-  `${API_BASE_URL}/api/profiles`,
-  {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  }
+    const data = await response.json();
 
-);
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Unable to fetch profiles");
-      }
-
-      setProfiles(data.profiles || []);
-    } catch (error) {
-      console.error("Fetch profiles error:", error);
-      setError(error.message || "Unable to load profiles");
-    } finally {
-      setLoading(false);
+    if (!response.ok || !data.success) {
+      throw new Error(
+        data.message || "Unable to fetch profiles"
+      );
     }
-  };
+
+    setProfiles(data.profiles || []);
+
+  } catch (error) {
+    console.error("Featured Profiles Error:", error);
+    setError("Unable to load profiles");
+  }
+};
 
   fetchProfiles();
 }, []);

@@ -2,6 +2,7 @@ import express from "express";
 import { getPublicProfile } from "../controllers/profileController.js";
 
 import {
+  
   getAllProfiles,
   uploadProfilePhoto,
   uploadCertificate,
@@ -11,12 +12,23 @@ import {
 } from "../controllers/profileController.js";
 
 import authMiddleware from "../middleware/authMiddleware.js";
+import membershipMiddleware from "../middleware/membershipMiddleware.js";
 import upload from "../middleware/uploadMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", getAllProfiles);
-router.get("/:userId", authMiddleware, getPublicProfile);
+router.get(
+  "/",
+  authMiddleware,
+  membershipMiddleware,
+  getAllProfiles
+);
+
+router.get(
+  "/:userId",
+  authMiddleware,
+  getPublicProfile
+);
 router.post(
   "/photo",
   authMiddleware,

@@ -46,7 +46,7 @@ const [accountOpen, setAccountOpen] = useState(false);
           </a>
 
           <a
-            href="#profiles"
+            href="#public-profile"
             className="text-[13px] font-medium text-[#563927] transition hover:text-[#9b261f]"
           >
             Profiles
@@ -64,6 +64,9 @@ const [accountOpen, setAccountOpen] = useState(false);
 >
   About Chairman
 </a>
+
+
+
           <a
             href="#how"
             className="text-[13px] font-medium text-[#563927] transition hover:text-[#9b261f]"
@@ -185,7 +188,7 @@ const [accountOpen, setAccountOpen] = useState(false);
             </a>
 
             <a
-              href="#profiles"
+              href="#public-profile"
               onClick={() => setOpen(false)}
               className="text-sm text-[#563927]"
             >

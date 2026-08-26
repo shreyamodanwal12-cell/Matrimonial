@@ -513,35 +513,6 @@ if (!loggedInUserId) {
 // CHECK ACTIVE MEMBERSHIP
 // =========================
 
-const { data: membership, error: membershipError } = await supabase
-  .from("memberships")
-  .select("id, status, end_date")
-  .eq("user_id", loggedInUserId)
-  .order("created_at", { ascending: false })
-  .limit(1)
-  .maybeSingle();
-
-if (membershipError) {
-  console.error("Membership Check Error:", membershipError);
-
-  return res.status(500).json({
-    success: false,
-    message: "Unable to verify membership",
-  });
-}
-
-const hasActiveMembership =
-  membership &&
-  membership.status === "ACTIVE" &&
-  new Date(membership.end_date) >= new Date();
-
-if (!hasActiveMembership) {
-  return res.status(403).json({
-    success: false,
-    message: "Please purchase a membership package to view profiles",
-    requiresMembership: true,
-  });
-}
 
 
    

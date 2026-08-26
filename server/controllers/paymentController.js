@@ -10,37 +10,60 @@ import { randomUUID } from "crypto";
 
 export const createPayment = async (req, res) => {
   try {
-    // Logged-in user
     const userId = req.user.id;
 
-    // Mam ne ₹1 test payment bola hai
-    // ₹1 = 100 paise
+    // ₹1 test payment
     const amount = 100;
+
+    const {
+      planName,
+      duration,
+    } = req.body;
+
+    console.log("Payment Request:", {
+      userId,
+      planName,
+      duration,
+    });
+
+    if (!planName) {
+      return res.status(400).json({
+        success: false,
+        message: "Plan name is required",
+      });
+    }
 
     const merchantOrderId = `MATRI_${randomUUID()}`;
 
     const redirectUrl =
-  `https://matrimonial-alpha.vercel.app/payment-success?orderId=${merchantOrderId}`;
+      `https://matrimonial-alpha.vercel.app/payment-success?orderId=${merchantOrderId}`;
 
-    // ==================================================
-    // 1. Pehle pending payment database mein create karo
-    // ==================================================
 
-    const { error: paymentError } = await supabase
-      .from("payments")
-      .insert([
-        {
-          user_id: userId,
-          order_id: merchantOrderId,
-          plan_name: "Premium",
-          amount: 1,
-          currency: "INR",
-          payment_status: "pending",
-        },
-      ]);
+    // ==========================================
+    // CREATE PENDING PAYMENT
+    // ==========================================
+
+    const { data: paymentData, error: paymentError } =
+      await supabase
+        .from("payments")
+        .insert([
+          {
+            user_id: userId,
+            order_id: merchantOrderId,
+            plan_name: planName,
+            amount: 1,
+            currency: "INR",
+            payment_status: "pending",
+          },
+        ])
+        .select()
+        .single();
 
     if (paymentError) {
-      console.error("Payment DB Insert Error:", paymentError);
+      console.error(
+        "Payment DB Insert Error:",
+        paymentError
+      );
 
       return res.status(500).json({
         success: false,
@@ -49,30 +72,40 @@ export const createPayment = async (req, res) => {
       });
     }
 
-
-    // ==================================================
-    // 2. PhonePe payment request
-    // ==================================================
-
-    const request = StandardCheckoutPayRequest.builder()
-      .merchantOrderId(merchantOrderId)
-      .amount(amount)
-      .redirectUrl(redirectUrl)
-      .build();
+    console.log(
+      "Payment Created:",
+      paymentData
+    );
 
 
-    // ==================================================
-    // 3. PhonePe checkout create
-    // ==================================================
+    // ==========================================
+    // PHONEPE REQUEST
+    // ==========================================
 
-    const response = await phonePeClient.pay(request);
+    const request =
+      StandardCheckoutPayRequest.builder()
+        .merchantOrderId(merchantOrderId)
+        .amount(amount)
+        .redirectUrl(redirectUrl)
+        .build();
 
-    console.log("PhonePe Response:", response);
+
+    // ==========================================
+    // PHONEPE CHECKOUT
+    // ==========================================
+
+    const response =
+      await phonePeClient.pay(request);
+
+    console.log(
+      "PhonePe Response:",
+      response
+    );
 
 
-    // ==================================================
-    // 4. Frontend ko checkout URL bhejo
-    // ==================================================
+    // ==========================================
+    // SEND CHECKOUT URL
+    // ==========================================
 
     res.status(200).json({
       success: true,
@@ -83,7 +116,10 @@ export const createPayment = async (req, res) => {
 
   } catch (error) {
 
-    console.error("PhonePe Payment Error:", error);
+    console.error(
+      "PhonePe Payment Error:",
+      error
+    );
 
     res.status(500).json({
       success: false,
@@ -112,21 +148,24 @@ export const checkPaymentStatus = async (req, res) => {
     }
 
 
-    // ==================================================
-    // 1. PhonePe se latest status lo
-    // ==================================================
+    // ==========================================
+    // 1. PHONEPE STATUS
+    // ==========================================
 
-    const response = await phonePeClient.getOrderStatus(orderId);
+    const response =
+      await phonePeClient.getOrderStatus(orderId);
 
-    console.log("PhonePe Status Response:", response);
-
+    console.log(
+      "PhonePe Status Response:",
+      response
+    );
 
     const status = response.state;
 
 
-    // ==================================================
-    // 2. PhonePe payment details se transaction ID
-    // ==================================================
+    // ==========================================
+    // 2. TRANSACTION DETAILS
+    // ==========================================
 
     let transactionId = null;
     let paymentMethod = null;
@@ -135,50 +174,184 @@ export const checkPaymentStatus = async (req, res) => {
       response.paymentDetails &&
       response.paymentDetails.length > 0
     ) {
-      const payment = response.paymentDetails[0];
 
-      transactionId = payment.transactionId || null;
-      paymentMethod = payment.paymentMode || null;
+      const payment =
+        response.paymentDetails[0];
+
+      transactionId =
+        payment.transactionId || null;
+
+      paymentMethod =
+        payment.paymentMode || null;
     }
 
 
-    // ==================================================
-    // 3. Payment COMPLETED hai to database update karo
-    // ==================================================
+    // ==========================================
+    // 3. PAYMENT RECORD FIND
+    // ==========================================
 
-    if (status === "COMPLETED") {
-
-      const { error: updateError } = await supabase
-        .from("payments")
-        .update({
-          payment_status: "paid",
-          transaction_id: transactionId,
-          payment_method: paymentMethod,
-          paid_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("order_id", orderId);
+    const {
+      data: paymentData,
+      error: paymentFetchError,
+    } = await supabase
+      .from("payments")
+      .select("*")
+      .eq("order_id", orderId)
+      .single();
 
 
-      if (updateError) {
-        console.error(
-          "Payment Update Error:",
-          updateError
-        );
-      }
+    if (paymentFetchError || !paymentData) {
+
+      console.error(
+        "Payment Record Fetch Error:",
+        paymentFetchError
+      );
+
+      return res.status(404).json({
+        success: false,
+        message: "Payment record not found",
+      });
     }
 
 
-    // ==================================================
-    // 4. Payment FAILED hai to database update karo
-    // ==================================================
+    // ==========================================
+    // 4. PAYMENT COMPLETED
+    // ==========================================
+
+   
+// ==========================================
+// 3. Check karo membership already bani hai
+// ==========================================
+
+const { data: existingMembership, error: membershipCheckError } =
+  await supabase
+    .from("memberships")
+    .select("id")
+    .eq("payment_id", paymentData.id)
+    .maybeSingle();
+
+if (membershipCheckError) {
+  console.error(
+    "Membership Check Error:",
+    membershipCheckError
+  );
+}
+
+
+// ==========================================
+// 4. Agar membership nahi bani hai
+// ==========================================
+
+if (!existingMembership) {
+
+  const startDate = new Date();
+
+  // ------------------------------------------
+  // Plan ke according duration decide karo
+  // ------------------------------------------
+
+  let duration;
+  let months;
+
+  if (paymentData.plan_name === "Basic") {
+    duration = "1 Month";
+    months = 1;
+  }
+
+  else if (paymentData.plan_name === "Premium") {
+    duration = "3 Months";
+    months = 3;
+  }
+
+  else if (paymentData.plan_name === "Royal") {
+    duration = "6 Months";
+    months = 6;
+  }
+
+  else {
+    console.error(
+      "Unknown Plan:",
+      paymentData.plan_name
+    );
+
+    return res.status(400).json({
+      success: false,
+      message: "Invalid plan name",
+    });
+  }
+
+
+  // ------------------------------------------
+  // End date calculate karo
+  // ------------------------------------------
+
+  const endDate = new Date(startDate);
+
+  endDate.setMonth(
+    endDate.getMonth() + months
+  );
+
+
+  // ==========================================
+  // MEMBERSHIP INSERT
+  // ==========================================
+
+  const {
+    data: membershipData,
+    error: membershipError
+  } = await supabase
+    .from("memberships")
+    .insert([
+      {
+        user_id: paymentData.user_id,
+        plan_name: paymentData.plan_name,
+        duration: duration,
+        amount: paymentData.amount,
+        payment_id: paymentData.id,
+        start_date: startDate.toISOString(),
+        end_date: endDate.toISOString(),
+        status: "ACTIVE",
+      },
+    ])
+    .select()
+    .single();
+
+
+  if (membershipError) {
+
+    console.error(
+      "❌ Membership Insert Error:",
+      membershipError
+    );
+
+  } else {
+
+    console.log(
+      "✅ Membership Created Successfully:",
+      membershipData
+    );
+  }
+
+} else {
+
+  console.log(
+    "ℹ️ Membership already exists:",
+    existingMembership.id
+  );
+}
+
+    // ==========================================
+    // 5. PAYMENT FAILED
+    // ==========================================
 
     if (
       status === "FAILED" ||
       status === "CANCELLED"
     ) {
 
-      const { error: updateError } = await supabase
+      const {
+        error: failedUpdateError,
+      } = await supabase
         .from("payments")
         .update({
           payment_status: "failed",
@@ -189,18 +362,19 @@ export const checkPaymentStatus = async (req, res) => {
         .eq("order_id", orderId);
 
 
-      if (updateError) {
+      if (failedUpdateError) {
+
         console.error(
           "Failed Payment Update Error:",
-          updateError
+          failedUpdateError
         );
       }
     }
 
 
-    // ==================================================
-    // 5. Frontend ko response
-    // ==================================================
+    // ==========================================
+    // 6. RESPONSE
+    // ==========================================
 
     res.status(200).json({
       success: true,
