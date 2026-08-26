@@ -42,35 +42,56 @@ function FeaturedProfiles() {
 
       const membershipData = await membershipResponse.json();
 
-      console.log("Membership Response:", membershipData);
+console.log("Membership Response:", membershipData);
 
-      // No membership
-      if (
-        !membershipResponse.ok ||
-        !membershipData.success ||
-        !membershipData.membership
-      ) {
-        setHasMembership(false);
-        setProfiles([]);
-        setLoading(false);
-        return;
-      }
+// --------------------------------
+// GET MEMBERSHIPS ARRAY
+// --------------------------------
+const memberships = membershipData.memberships || [];
 
-      // Check ACTIVE status
-      const membershipStatus =
-        membershipData.membership.status?.toUpperCase();
+// Latest membership
+const membership = memberships[0];
 
-      if (membershipStatus !== "ACTIVE") {
-        setHasMembership(false);
-        setProfiles([]);
-        setLoading(false);
-        return;
-      }
+// --------------------------------
+// NO MEMBERSHIP
+// --------------------------------
+if (
+  !membershipResponse.ok ||
+  !membershipData.success ||
+  !membership
+) {
+  setHasMembership(false);
+  setProfiles([]);
+  setLoading(false);
+  return;
+}
 
-      // --------------------------------
-      // MEMBERSHIP ACTIVE
-      // --------------------------------
-      setHasMembership(true);
+// --------------------------------
+// CHECK ACTIVE MEMBERSHIP
+// --------------------------------
+const membershipStatus =
+  membership.status?.toUpperCase();
+
+const expiryDate = membership.end_date
+  ? new Date(membership.end_date)
+  : null;
+
+const isActive =
+  membershipStatus === "ACTIVE" &&
+  expiryDate &&
+  expiryDate >= new Date();
+
+if (!isActive) {
+  setHasMembership(false);
+  setProfiles([]);
+  setLoading(false);
+  return;
+}
+
+// --------------------------------
+// MEMBERSHIP ACTIVE
+// --------------------------------
+setHasMembership(true);
 
       // --------------------------------
       // FETCH PROFILES
@@ -93,7 +114,8 @@ function FeaturedProfiles() {
       }
 
       setProfiles(data.profiles || []);
-    } catch (error) {
+    } 
+    catch (error) {
       console.error(
         "Featured Profiles Error:",
         error

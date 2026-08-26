@@ -33,14 +33,16 @@ const membershipMiddleware = async (req, res, next) => {
       return res.status(403).json({
         success: false,
         message: "Active membership required to view profiles",
+        requiresMembership: true,
       });
     }
 
     // Check status
-    if (membership.status !== "ACTIVE") {
+    if (membership.status?.toUpperCase() !== "ACTIVE") {
       return res.status(403).json({
         success: false,
         message: "Active membership required to view profiles",
+        requiresMembership: true,
       });
     }
 
@@ -48,8 +50,7 @@ const membershipMiddleware = async (req, res, next) => {
     const now = new Date();
     const expiryDate = new Date(membership.end_date);
 
-    if (expiryDate < now) {
-      // Update expired status
+    if (!membership.end_date || expiryDate < now) {
       await supabase
         .from("memberships")
         .update({
@@ -60,13 +61,15 @@ const membershipMiddleware = async (req, res, next) => {
       return res.status(403).json({
         success: false,
         message: "Your membership has expired",
+        requiresMembership: true,
       });
     }
 
-    // Membership is valid
+    // Membership valid
     req.membership = membership;
 
     next();
+
   } catch (error) {
     console.error("Membership Middleware Error:", error);
 

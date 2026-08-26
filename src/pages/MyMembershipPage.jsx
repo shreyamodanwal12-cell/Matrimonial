@@ -2,43 +2,63 @@ import { useEffect, useState } from "react";
 import API_BASE_URL from "../api/api";
 function MyMembershipPage() {
   const [profiles, setProfiles] = useState([]);
+const [membership, setMembership] = useState(null);
+
 const [loading, setLoading] = useState(true);
 const [error, setError] = useState("");
-// const [hasMembership, setHasMembership] = useState(false);
 
   useEffect(() => {
-    const fetchMembership = async () => {
-      try {
-        const token = localStorage.getItem("token");
+  const fetchMembership = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-        const response = await fetch(
-  `${API_BASE_URL}/api/membership/my`,
-  {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  }
-);
+      const token = localStorage.getItem("token");
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            data.message || "Unable to fetch membership"
-          );
-        }
-
-        setMembership(data.membership);
-      } catch (error) {
-        console.error("Membership Error:", error);
-        setError(error.message);
-      } finally {
-        setLoading(false);
+      if (!token) {
+        throw new Error("Please login first");
       }
-    };
 
-    fetchMembership();
-  }, []);
+      const response = await fetch(
+        `${API_BASE_URL}/api/membership/my`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      console.log("Membership Response:", data);
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || "Unable to fetch membership"
+        );
+      }
+
+      const memberships = data.memberships || [];
+
+      if (memberships.length === 0) {
+        setMembership(null);
+        return;
+      }
+
+      // Latest membership
+      setMembership(memberships[0]);
+
+    } catch (error) {
+      console.error("Membership Error:", error);
+      setError(error.message || "Unable to fetch membership");
+      setMembership(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchMembership();
+}, []);
 
   const formatDate = (date) => {
     if (!date) return "-";
