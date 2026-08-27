@@ -3,14 +3,18 @@ import express from "express";
 import {
   getPublicProfile,
   getAllProfiles,
+  getFeaturedProfiles,
   uploadProfilePhoto,
   uploadCertificate,
+  uploadAadharCard,
+   uploadDocumentPhoto,
   updateProfileStatus,
   updateMyMatrimonialProfile,
   updateMyFamilyDetails,
 } from "../controllers/profileController.js";
 
 import authMiddleware from "../middleware/authMiddleware.js";
+import adminMiddleware from "../middleware/adminMiddleware.js";
 import membershipMiddleware from "../middleware/membershipMiddleware.js";
 import upload from "../middleware/uploadMiddleware.js";
 
@@ -21,13 +25,18 @@ const router = express.Router();
 // GET ALL PROFILES
 // ========================================
 
+
 router.get(
   "/",
   authMiddleware,
-  membershipMiddleware,
+  adminMiddleware,
   getAllProfiles
 );
-
+router.get(
+  "/featured",
+  authMiddleware,
+  getFeaturedProfiles
+);
 
 // ========================================
 // GET SINGLE PUBLIC PROFILE
@@ -63,8 +72,24 @@ router.post(
   upload.single("certificate"),
   uploadCertificate
 );
+// ========================================
+// UPLOAD AADHAAR CARD
+// ========================================
+
+router.post(
+  "/documents/aadhaar",
+  authMiddleware,
+  upload.single("aadhaarFile"),
+  uploadAadharCard
+);
 
 
+router.post(
+  "/documents/photo/:photoNumber",
+  authMiddleware,
+  upload.single("photo"),
+  uploadDocumentPhoto
+);
 // ========================================
 // UPDATE PROFILE STATUS
 // ========================================
@@ -72,6 +97,7 @@ router.post(
 router.patch(
   "/:id/status",
   authMiddleware,
+  adminMiddleware,
   updateProfileStatus
 );
 

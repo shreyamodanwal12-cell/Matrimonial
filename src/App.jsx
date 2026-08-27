@@ -25,6 +25,7 @@ import TermsPage from "./pages/TermsPage";
 import RefundPolicyPage from "./pages/RefundPolicyPage";
 import SubmitTestimonialPage from "./pages/SubmitTestimonialPage";
 import AdminTestimonialsPage from "./pages/admin/AdminTestimonialsPage";
+import AadhaarVerificationPage from "./pages/AadhaarVerificationPage";
 
 function App() {
   const path = window.location.pathname;
@@ -40,6 +41,9 @@ function App() {
   }
   if (path === "/chairman") {
   return <ChairmanPage />;
+}
+if (path === "/aadhaar-verification") {
+  return <AadhaarVerificationPage />;
 }
 if (path === "/register/family") {
   return <FamilyDetailsPage />;

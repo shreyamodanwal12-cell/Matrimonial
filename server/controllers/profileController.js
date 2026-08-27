@@ -8,7 +8,7 @@ import supabase from "../config/supabase.js";
 export const getAllProfiles = async (req, res) => {
   try {
     const { data: profiles, error } = await supabase
-      .from("users")
+      .from("users") 
       .select(`
         id,
         full_name,
@@ -77,7 +77,13 @@ export const getAllProfiles = async (req, res) => {
           partner_profession,
           partner_religion,
           partner_location
-        )
+        ),
+          profile_documents (
+  aadhar_card,
+  photo_1,
+  photo_2,
+  photo_3
+)
       `)
       .eq("role", "user")
   .order("created_at", { ascending: false });
@@ -106,6 +112,41 @@ export const getAllProfiles = async (req, res) => {
 };
 
 
+
+
+export const getFeaturedProfiles = async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("profile_status", "Approved")
+      .eq("role", "user")
+      .eq("is_active", true)
+      .limit(6);
+
+    if (error) {
+      console.error("Featured profiles error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      profiles: data,
+    });
+
+  } catch (error) {
+    console.error("Featured profiles error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch featured profiles",
+    });
+  }
+};
 
 // ======================================================
 // UPLOAD PROFILE PHOTO
@@ -280,6 +321,340 @@ export const uploadCertificate = async (req, res) => {
     });
   }
 };
+// ======================================================
+// UPLOAD AADHAAR CARD
+// ======================================================
+
+export const uploadAadharCard = async (req, res) => {
+  try {
+    console.log("========== AADHAAR UPLOAD ==========");
+    console.log("REQ.USER:", req.user);
+    console.log("REQ.FILE:", req.file);
+    const userId = req.user.id;
+
+    // Check file
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Aadhaar card is required",
+      });
+    }
+
+    // Allow only image/PDF files
+    const allowedTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "application/pdf",
+    ];
+
+    if (!allowedTypes.includes(req.file.mimetype)) {
+      return res.status(400).json({
+        success: false,
+        message: "Only JPG, PNG or PDF files are allowed",
+      });
+    }
+
+    // File extension
+    const fileExt = req.file.originalname
+      .split(".")
+      .pop()
+      .toLowerCase();
+
+    const fileName = `${userId}-${Date.now()}.${fileExt}`;
+
+    const filePath = `${userId}/${fileName}`;
+
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from("aadhar-cards")
+      .upload(filePath, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      console.error(
+        "Aadhaar upload error:",
+        uploadError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to upload Aadhaar card",
+      });
+    }
+
+    // Create signed URL because bucket is private
+    const { data: signedUrlData, error: signedUrlError } =
+      await supabase.storage
+        .from("aadhar-cards")
+        .createSignedUrl(filePath, 60 * 60);
+
+    if (signedUrlError) {
+      console.error(
+        "Aadhaar signed URL error:",
+        signedUrlError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to create Aadhaar URL",
+      });
+    }
+
+    const aadharUrl = signedUrlData.signedUrl;
+
+    // Check whether document record already exists
+    const { data: existingDocument, error: findError } =
+      await supabase
+        .from("profile_documents")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+    if (findError) {
+      console.error(
+        "Find profile document error:",
+        findError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to find profile document",
+      });
+    }
+
+    let document;
+    let databaseError;
+
+    if (existingDocument) {
+      // Update existing record
+      const result = await supabase
+        .from("profile_documents")
+        .update({
+          aadhar_card: aadharUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId)
+        .select()
+        .single();
+
+      document = result.data;
+      databaseError = result.error;
+    } else {
+      // Create new record
+      const result = await supabase
+        .from("profile_documents")
+        .insert([
+          {
+            user_id: userId,
+            aadhar_card: aadharUrl,
+          },
+        ])
+        .select()
+        .single();
+
+      document = result.data;
+      databaseError = result.error;
+    }
+
+    if (databaseError) {
+      console.error(
+        "Aadhaar database error:",
+        databaseError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Aadhaar uploaded but database update failed",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Aadhaar card uploaded successfully",
+      document,
+    });
+
+  } catch (error) {
+    console.error(
+      "Upload Aadhaar error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// ======================================================
+// UPLOAD PROFILE DOCUMENT PHOTO
+// ======================================================
+
+export const uploadDocumentPhoto = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { photoNumber } = req.params;
+
+    // Only photo_1, photo_2, photo_3 are allowed
+    const allowedPhotos = ["photo_1", "photo_2", "photo_3"];
+
+    if (!allowedPhotos.includes(photoNumber)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid photo number",
+      });
+    }
+
+    // Check file
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Photo is required",
+      });
+    }
+
+    // Allow only images
+    const allowedTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+    ];
+
+    if (!allowedTypes.includes(req.file.mimetype)) {
+      return res.status(400).json({
+        success: false,
+        message: "Only JPG, PNG or WEBP images are allowed",
+      });
+    }
+
+    // File extension
+    const fileExt = req.file.originalname
+      .split(".")
+      .pop()
+      .toLowerCase();
+
+    const fileName = `${userId}-${photoNumber}-${Date.now()}.${fileExt}`;
+
+    const filePath = `${userId}/${fileName}`;
+
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from("profile-photos")
+      .upload(filePath, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      console.error(
+        "Document photo upload error:",
+        uploadError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to upload photo",
+      });
+    }
+
+    // Create public URL
+    const { data: publicUrlData } = supabase.storage
+      .from("profile-photos")
+      .getPublicUrl(filePath);
+
+    const photoUrl = publicUrlData.publicUrl;
+
+    // Check profile_documents record
+    const { data: existingDocument, error: findError } =
+      await supabase
+        .from("profile_documents")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+    if (findError) {
+      console.error(
+        "Find profile document error:",
+        findError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to find profile document",
+      });
+    }
+
+    let document;
+    let databaseError;
+
+    if (existingDocument) {
+      // Update selected photo
+      const result = await supabase
+        .from("profile_documents")
+        .update({
+          [photoNumber]: photoUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId)
+        .select()
+        .single();
+
+      document = result.data;
+      databaseError = result.error;
+    } else {
+      // Create profile_documents record
+      const result = await supabase
+        .from("profile_documents")
+        .insert([
+          {
+            user_id: userId,
+            [photoNumber]: photoUrl,
+          },
+        ])
+        .select()
+        .single();
+
+      document = result.data;
+      databaseError = result.error;
+    }
+
+    if (databaseError) {
+      console.error(
+        "Document photo database error:",
+        databaseError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Photo uploaded but database update failed",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `${photoNumber} uploaded successfully`,
+      document,
+    });
+
+  } catch (error) {
+    console.error(
+      "Upload document photo error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+
 
 // ======================================================
 // UPDATE PROFILE STATUS (ADMIN)

@@ -92,16 +92,16 @@ function LifestylePage() {
     console.log("Registration Response:", data);
 
     // Registration completed
-    alert("Registration completed successfully!");
+   alert("Registration completed successfully!");
 
-    // Remove temporary registration data
-    localStorage.removeItem("registrationStep1");
-    localStorage.removeItem("registrationStep2");
-    localStorage.removeItem("registrationStep3");
-    localStorage.removeItem("registrationStep4");
+// Remove temporary registration data
+localStorage.removeItem("registrationStep1");
+localStorage.removeItem("registrationStep2");
+localStorage.removeItem("registrationStep3");
+localStorage.removeItem("registrationStep4");
 
-    // Go to login
-    window.location.href = "/login";
+// Go to Aadhaar verification page
+window.location.href = "/login";
 
   } catch (error) {
     console.error("Registration Error:", error);

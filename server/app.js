@@ -8,7 +8,7 @@ import membershipRoutes from "./routes/membershipRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import testimonialRoutes from "./routes/testimonialRoutes.js";
 const app = express();
-
+;
 app.use(
   cors({
     origin: [
@@ -27,6 +27,10 @@ app.use("/api/payment", paymentRoutes);
 app.use("/api/membership", membershipRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/testimonials", testimonialRoutes);
+
+
+
+
 // app.get("/", (req, res) => {
 //   res.json({
 //     success: true,

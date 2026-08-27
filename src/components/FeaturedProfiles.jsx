@@ -97,7 +97,7 @@ setHasMembership(true);
       // FETCH PROFILES
       // --------------------------------
      const response = await fetch(
-  `${API_BASE_URL}/api/profiles`,
+  `${API_BASE_URL}/api/profiles/featured`,
   {
     headers: {
       Authorization: `Bearer ${token}`,

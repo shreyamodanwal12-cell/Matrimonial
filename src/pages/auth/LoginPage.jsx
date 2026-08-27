@@ -67,11 +67,11 @@ function LoginPage() {
       localStorage.setItem("user", JSON.stringify(data.user));
 
       // Role based redirect
-      if (data.user.role === "admin") {
-        window.location.href = "/admin";
-      } else {
-        window.location.href = "/";
-      }
+if (data.user.role === "admin") {
+  window.location.href = "/admin";
+} else {
+  window.location.href = "/aadhaar-verification";
+}
     } catch (error) {
       console.error("Login Error:", error);
 

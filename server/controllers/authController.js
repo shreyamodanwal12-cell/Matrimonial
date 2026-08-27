@@ -115,10 +115,11 @@ export const registerUser = async (req, res) => {
           password: hashedPassword,
           role: "user",
           is_active: true,
+          profile_status: "pending",
         },
       ])
       .select(
-        "id, full_name, email, mobile, role, is_active, created_at"
+        "id, full_name, email, mobile, role, is_active, profile_status, created_at"
       )
       .single();
 
@@ -378,6 +379,10 @@ export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // ======================================================
+    // BASIC VALIDATION
+    // ======================================================
+
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -385,7 +390,10 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // Find user
+    // ======================================================
+    // FIND USER
+    // ======================================================
+
     const { data: user, error } = await supabase
       .from("users")
       .select("*")
@@ -393,7 +401,7 @@ export const loginUser = async (req, res) => {
       .maybeSingle();
 
     if (error) {
-      console.error(error);
+      console.error("Find user error:", error);
 
       return res.status(500).json({
         success: false,
@@ -408,7 +416,10 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // Check account status
+    // ======================================================
+    // CHECK ACCOUNT STATUS
+    // ======================================================
+
     if (!user.is_active) {
       return res.status(403).json({
         success: false,
@@ -416,7 +427,10 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // Compare password
+    // ======================================================
+    // CHECK PASSWORD
+    // ======================================================
+
     const isPasswordValid = await bcrypt.compare(
       password,
       user.password
@@ -429,7 +443,77 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // Create JWT
+    // ======================================================
+    // CHECK AADHAAR STATUS
+    // ======================================================
+
+    const {
+      data: documents,
+      error: documentError,
+    } = await supabase
+      .from("profile_documents")
+      .select("id, aadhar_card")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (documentError) {
+      console.error(
+        "Aadhaar document check error:",
+        documentError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to check Aadhaar verification",
+      });
+    }
+
+    const aadhaarUploaded =
+      !!documents?.aadhar_card;
+
+    // ======================================================
+    // CHECK MEMBERSHIP STATUS
+    // ======================================================
+
+    const {
+      data: membership,
+      error: membershipError,
+    } = await supabase
+      .from("payments")
+      .select(
+        "id, plan_name, payment_status, expires_at"
+      )
+      .eq("user_id", user.id)
+      .eq("payment_status", "completed")
+      .order("created_at", {
+        ascending: false,
+      })
+      .limit(1)
+      .maybeSingle();
+
+    if (membershipError) {
+      console.error(
+        "Membership check error:",
+        membershipError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to check membership",
+      });
+    }
+
+    const membershipActive =
+      !!membership &&
+      (
+        !membership.expires_at ||
+        new Date(membership.expires_at) > new Date()
+      );
+
+    // ======================================================
+    // CREATE JWT
+    // ======================================================
+
     const token = jwt.sign(
       {
         id: user.id,
@@ -442,20 +526,47 @@ export const loginUser = async (req, res) => {
       }
     );
 
+    // ======================================================
+    // LOGIN SUCCESS
+    // ======================================================
+
     return res.status(200).json({
       success: true,
       message: "Login successful",
+
       token,
+
       user: {
         id: user.id,
         full_name: user.full_name,
         email: user.email,
         mobile: user.mobile,
         role: user.role,
+
+        profile_status:
+          user.profile_status || "pending",
+
+        aadhaarUploaded,
+
+        membershipActive,
+
+        membership: membership
+          ? {
+              plan_name: membership.plan_name,
+              payment_status:
+                membership.payment_status,
+              expires_at:
+                membership.expires_at,
+            }
+          : null,
       },
     });
+
   } catch (error) {
-    console.error(error);
+    console.error(
+      "Login error:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
@@ -537,6 +648,12 @@ export const getCurrentUser = async (req, res) => {
           partner_religion,
           partner_location
         )
+          profile_documents (
+  aadhar_card,
+  photo_1,
+  photo_2,
+  photo_3
+)
       `)
       .eq("id", req.user.id)
       .single();

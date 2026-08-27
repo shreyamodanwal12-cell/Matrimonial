@@ -1,44 +1,57 @@
 import { useEffect, useState } from "react";
 import API_BASE_URL from "../../api/api";
+
 function ProfilesPage() {
   const [search, setSearch] = useState("");
-const [status, setStatus] = useState("All");
-const [selectedProfile, setSelectedProfile] = useState(null);
+  const [status, setStatus] = useState("All");
+  const [selectedProfile, setSelectedProfile] = useState(null);
 
-const [profiles, setProfiles] = useState([]);
-const [loading, setLoading] = useState(true);
-const [error, setError] = useState("");
+  const [profiles, setProfiles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      try {
+        setError("");
 
-useEffect(() => {
-const fetchProfiles = async () => {
-  try {
-    setError("");
+        const token = localStorage.getItem("token");
 
-    const response = await fetch(
-      `${API_BASE_URL}/api/profiles`
-    );
+        const response = await fetch(
+          `${API_BASE_URL}/api/profiles`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
-    const data = await response.json();
+        const data = await response.json();
 
-    if (!response.ok || !data.success) {
-      throw new Error(
-        data.message || "Unable to fetch profiles"
-      );
-    }
+        if (!response.ok || !data.success) {
+          throw new Error(
+            data.message || "Unable to fetch profiles"
+          );
+        }
 
-    setProfiles(data.profiles || []);
+        setProfiles(data.profiles || []);
 
-  } catch (error) {
-    console.error("Featured Profiles Error:", error);
-    setError("Unable to load profiles");
-  }
-};
+      } catch (error) {
+        console.error("Featured Profiles Error:", error);
+        setError(error.message || "Unable to load profiles");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  fetchProfiles();
-}, []);
+    fetchProfiles();
+  }, []);
+
+  
 
 
 const updateProfileStatus = async (profileId, newStatus) => {
@@ -863,7 +876,74 @@ const filteredProfiles = profiles.filter((profile) => {
   </div>
 
 </div>  
+{/* ================= PROFILE DOCUMENTS ================= */}
+<div className="mt-4 rounded-lg border border-[#eadfce] p-4">
 
+  <p className="text-[8px] uppercase tracking-[1px] text-[#a67c35]">
+    Profile Documents & Photos
+  </p>
+
+  {/* Photos */}
+  <div className="mt-3 grid grid-cols-3 gap-3">
+
+    {[1, 2, 3].map((num) => {
+      const photo =
+        selectedProfile.profile_documents?.[`photo_${num}`];
+
+      return (
+        <div key={num}>
+          <p className="mb-1 text-[8px] text-[#9a806f]">
+            Photo {num}
+          </p>
+
+          {photo ? (
+            <a
+              href={photo}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                src={photo}
+                alt={`Photo ${num}`}
+                className="h-24 w-full rounded-lg border border-[#eadfce] object-cover hover:opacity-80"
+              />
+            </a>
+          ) : (
+            <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-[#eadfce] text-[8px] text-[#9a806f]">
+              Not uploaded
+            </div>
+          )}
+        </div>
+      );
+    })}
+
+  </div>
+
+  {/* Aadhaar */}
+  <div className="mt-4">
+
+    <p className="text-[8px] text-[#9a806f]">
+      Aadhaar Card
+    </p>
+
+    {selectedProfile.profile_documents?.aadhar_card ? (
+      <a
+        href={selectedProfile.profile_documents.aadhar_card}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-2 inline-flex rounded-lg bg-[#8c1d18] px-4 py-2 text-[9px] font-semibold text-white hover:bg-[#701510]"
+      >
+        View Aadhaar Card
+      </a>
+    ) : (
+      <p className="mt-2 text-[10px] text-[#9a806f]">
+        Aadhaar card not uploaded
+      </p>
+    )}
+
+  </div>
+
+</div>
 {/* Certificate */}
 <div className="mt-4 rounded-lg border border-[#eadfce] p-4">
 
