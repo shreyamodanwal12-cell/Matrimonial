@@ -43,7 +43,8 @@ function FeaturedProfiles() {
       const membershipData = await membershipResponse.json();
 
 console.log("Membership Response:", membershipData);
-
+console.log("All Memberships:", membershipData.memberships);
+console.log("Latest Membership:", membershipData.memberships?.[0]);
 // --------------------------------
 // GET MEMBERSHIPS ARRAY
 // --------------------------------
@@ -51,7 +52,22 @@ const memberships = membershipData.memberships || [];
 
 // Latest membership
 const membership = memberships[0];
+// --------------------------------
+// PROFILE LIMIT CHECK
+// --------------------------------
 
+let profileLimit;
+
+if (membership.plan_name === "Basic") {
+  profileLimit = 10;
+} else if (membership.plan_name === "Premium") {
+  profileLimit = 50;
+} else if (membership.plan_name === "Royal") {
+  profileLimit = Infinity;
+}
+
+console.log("User Plan:", membership.plan_name);
+console.log("Allowed Profile Limit:", profileLimit);
 // --------------------------------
 // NO MEMBERSHIP
 // --------------------------------
@@ -112,8 +128,24 @@ setHasMembership(true);
           data.message || "Unable to fetch profiles"
         );
       }
+console.log("Total Profiles Available:", data.profiles?.length || 0);
+console.log(
+  "Profiles User Can View:",
+  Math.min(
+    data.profiles?.length || 0,
+    profileLimit === Infinity ? data.profiles?.length || 0 : profileLimit
+  )
+);
+      const allProfiles = data.profiles || [];
 
-      setProfiles(data.profiles || []);
+const visibleProfiles =
+  profileLimit === Infinity
+    ? allProfiles
+    : allProfiles.slice(0, profileLimit);
+
+console.log("Final Profiles Shown:", visibleProfiles.length);
+
+setProfiles(visibleProfiles);
     } 
     catch (error) {
       console.error(
@@ -235,7 +267,7 @@ setHasMembership(true);
         {/* CARDS */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
 
-          {profiles.slice(0, 6).map((profile) => {
+          {profiles.map((profile) => {
 
             const matrimonial =
               profile.matrimonial_profiles?.[0] ||

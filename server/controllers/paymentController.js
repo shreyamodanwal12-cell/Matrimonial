@@ -7,7 +7,8 @@ import { randomUUID } from "crypto";
 // ======================================================
 // CREATE PAYMENT
 // ======================================================
-
+const FRONTEND_URL =
+  process.env.FRONTEND_URL || "http://localhost:5173";
 export const createPayment = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -36,7 +37,7 @@ export const createPayment = async (req, res) => {
     const merchantOrderId = `MATRI_${randomUUID()}`;
 
     const redirectUrl =
-      `https://matrimonial-alpha.vercel.app/payment-success?orderId=${merchantOrderId}`;
+       `${FRONTEND_URL}/payment-success?orderId=${merchantOrderId}`;
 
 
     // ==========================================

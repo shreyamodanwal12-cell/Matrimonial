@@ -116,30 +116,163 @@ export const getAllProfiles = async (req, res) => {
 
 export const getFeaturedProfiles = async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("profile_status", "Approved")
-      .eq("role", "user")
-      .eq("is_active", true)
-      .limit(6);
+    // ==========================================
+    // 1. LOGGED-IN USER
+    // ==========================================
 
-    if (error) {
-      console.error("Featured profiles error:", error);
+    const userId = req.user.id;
+
+    // ==========================================
+    // 2. GET ACTIVE MEMBERSHIP
+    // ==========================================
+
+    const { data: membership, error: membershipError } =
+      await supabase
+        .from("memberships")
+        .select("plan_name, end_date, status")
+        .eq("user_id", userId)
+        .eq("status", "ACTIVE")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (membershipError) {
+      console.error(
+        "Membership Fetch Error:",
+        membershipError
+      );
 
       return res.status(500).json({
         success: false,
-        message: error.message,
+        message: "Unable to check membership",
       });
     }
 
+    // ==========================================
+    // 3. CHECK MEMBERSHIP EXISTS
+    // ==========================================
+
+    if (!membership) {
+      return res.status(403).json({
+        success: false,
+        message: "Active membership required",
+      });
+    }
+
+    // ==========================================
+    // 4. CHECK MEMBERSHIP EXPIRY
+    // ==========================================
+
+    const now = new Date();
+    const expiryDate = new Date(membership.end_date);
+
+    if (expiryDate < now) {
+      return res.status(403).json({
+        success: false,
+        message: "Your membership has expired",
+      });
+    }
+
+    // ==========================================
+    // 5. PLAN KE ACCORDING PROFILE LIMIT
+    // ==========================================
+
+    let profileLimit = 0;
+
+    if (membership.plan_name === "Basic") {
+      profileLimit = 10;
+    } else if (membership.plan_name === "Premium") {
+      profileLimit = 50;
+    } else if (membership.plan_name === "Royal") {
+      profileLimit = null; // Unlimited
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid membership plan",
+      });
+    }
+
+    // ==========================================
+    // 6. GET APPROVED PROFILES
+    // ==========================================
+
+    let query = supabase
+      .from("users")
+      .select(`
+        id,
+        full_name,
+        profile_photo,
+        profile_status,
+        is_active,
+        matrimonial_profiles (
+          gender,
+          birth_date,
+          education,
+          profession,
+          state,
+          native_place
+        ),
+        education_details (
+          highest_qualification,
+          profession,
+          job_title,
+          work_location
+        )
+      `)
+      .eq("role", "user")
+      .eq("profile_status", "Approved")
+      .eq("is_active", true)
+      .neq("id", userId)
+      .order("created_at", {
+        ascending: false,
+      });
+
+    // ==========================================
+    // 7. BASIC / PREMIUM LIMIT
+    // ==========================================
+
+    if (profileLimit !== null) {
+      query = query.limit(profileLimit);
+    }
+
+    // ==========================================
+    // 8. EXECUTE QUERY
+    // ==========================================
+
+    const { data: profiles, error: profilesError } =
+      await query;
+
+    if (profilesError) {
+      console.error(
+        "Featured profiles error:",
+        profilesError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to fetch profiles",
+      });
+    }
+
+    // ==========================================
+    // 9. RESPONSE
+    // ==========================================
+
     return res.status(200).json({
       success: true,
-      profiles: data,
+      plan: membership.plan_name,
+      profileLimit:
+        profileLimit === null
+          ? "Unlimited"
+          : profileLimit,
+      profiles: profiles || [],
     });
 
   } catch (error) {
-    console.error("Featured profiles error:", error);
+    console.error(
+      "Featured Profiles Error:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
@@ -1049,6 +1182,50 @@ if (!loggedInUserId) {
     return res.status(500).json({
       success: false,
       message: "Unable to fetch public profile",
+    });
+  }
+};
+
+// ======================================================
+// CHECK AADHAAR VERIFICATION
+// ======================================================
+
+export const checkAadharVerification = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const { data, error } = await supabase
+      .from("profile_documents")
+      .select("aadhar_card")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Aadhaar Check Error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to check Aadhaar verification",
+      });
+    }
+
+    const isVerified =
+      !!data?.aadhar_card;
+
+    return res.status(200).json({
+      success: true,
+      isVerified,
+    });
+
+  } catch (error) {
+    console.error(
+      "Aadhaar Verification Check Error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
     });
   }
 };

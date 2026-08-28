@@ -8,6 +8,7 @@ import {
   uploadCertificate,
   uploadAadharCard,
    uploadDocumentPhoto,
+   checkAadharVerification,
   updateProfileStatus,
   updateMyMatrimonialProfile,
   updateMyFamilyDetails,
@@ -38,6 +39,15 @@ router.get(
   getFeaturedProfiles
 );
 
+// ========================================
+// CHECK AADHAAR VERIFICATION
+// ========================================
+
+router.get(
+  "/verification/aadhaar",
+  authMiddleware,
+  checkAadharVerification
+);
 // ========================================
 // GET SINGLE PUBLIC PROFILE
 // ========================================

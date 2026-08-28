@@ -66,10 +66,113 @@ function LoginPage() {
       // Save logged-in user
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      // Role based redirect
+   // ========================================
+// ROLE BASED REDIRECT
+// ========================================
+
 if (data.user.role === "admin") {
   window.location.href = "/admin";
-} else {
+  return;
+}
+
+// ========================================
+// CHECK MEMBERSHIP FOR NORMAL USER
+// ========================================
+
+try {
+  const membershipResponse = await fetch(
+    `${API_BASE_URL}/api/membership/my`,
+    {
+      headers: {
+        Authorization: `Bearer ${data.token}`,
+      },
+    }
+  );
+
+  const membershipData = await membershipResponse.json();
+
+  console.log("Login Membership Response:", membershipData);
+
+  const memberships = membershipData.memberships || [];
+
+  // Latest membership
+  const membership = memberships[0];
+
+  // ========================================
+  // ACTIVE MEMBERSHIP
+  // ========================================
+
+  if (
+    membership &&
+    membership.status?.toUpperCase() === "ACTIVE" &&
+    membership.end_date &&
+    new Date(membership.end_date) >= new Date()
+  ) {
+    // Membership active hai
+    // Aadhaar page par nahi jayega
+    window.location.href = "/";
+    return;
+  }
+
+  // ========================================
+  // EXPIRED MEMBERSHIP
+  // ========================================
+
+  if (
+    membership &&
+    membership.end_date &&
+    new Date(membership.end_date) < new Date()
+  ) {
+    alert(
+      "Your membership has expired. Please renew your membership to continue."
+    );
+
+    window.location.href = "/plans";
+    return;
+  }
+
+ // ========================================
+// NO MEMBERSHIP
+// CHECK AADHAAR
+// ========================================
+
+const aadhaarResponse = await fetch(
+  `${API_BASE_URL}/api/profiles/verification/aadhaar`,
+  {
+    headers: {
+      Authorization: `Bearer ${data.token}`,
+    },
+  }
+);
+
+const aadhaarData = await aadhaarResponse.json();
+
+console.log(
+  "Aadhaar Verification Response:",
+  aadhaarData
+);
+
+if (
+  aadhaarResponse.ok &&
+  aadhaarData.success &&
+  aadhaarData.isVerified
+) {
+  // Aadhaar already verified
+  // Directly home page
+  window.location.href = "/";
+  return;
+}
+
+// Aadhaar not verified
+window.location.href = "/aadhaar-verification";
+
+} catch (membershipError) {
+  console.error(
+    "Login Membership Check Error:",
+    membershipError
+  );
+
+  // Agar membership check fail ho jaye
   window.location.href = "/aadhaar-verification";
 }
     } catch (error) {

@@ -3,50 +3,59 @@ import { useState } from "react";
 function PlansPage() {
   const [selectedPlan, setSelectedPlan] = useState("premium");
 
-  const plans = [
-    {
-      id: "basic",
-      name: "Basic",
-      duration: "1 Month",
-      price: "499",
-      description: "A simple start to your matrimonial journey.",
-      features: [
-        "Create matrimonial profile",
-        "Browse member profiles",
-        "Send interest requests",
-        "Basic profile visibility",
-      ],
-    },
-    {
-      id: "premium",
-      name: "Premium",
-      duration: "3 Months",
-      price: "999",
-      popular: true,
-      description: "More visibility and better opportunities to connect.",
-      features: [
-        "Everything in Basic",
-        "Unlimited profile browsing",
-        "Priority profile visibility",
-        "Direct contact access",
-        "Premium support",
-      ],
-    },
-    {
-      id: "royal",
-      name: "Royal",
-      duration: "6 Months",
-      price: "1,499",
-      description: "Our complete plan for a serious matrimonial journey.",
-      features: [
-        "Everything in Premium",
-        "Maximum profile visibility",
-        "Priority connection requests",
-        "Dedicated support",
-        "Royal member badge",
-      ],
-    },
-  ];
+ const plans = [
+  {
+    id: "basic",
+    name: "Basic",
+    duration: "1 Month",
+    price: "499",
+    profileLimit: 10,
+    profileText: "View up to 10 profiles",
+    description: "A simple start to your matrimonial journey.",
+    features: [
+      "Create matrimonial profile",
+      "View up to 10 member profiles",
+      "Send interest requests",
+      "Basic profile visibility",
+    ],
+  },
+
+  {
+    id: "premium",
+    name: "Premium",
+    duration: "3 Months",
+    price: "999",
+    profileLimit: 50,
+    profileText: "View up to 50 profiles",
+    popular: true,
+    description: "More visibility and better opportunities to connect.",
+    features: [
+      "Everything in Basic",
+      "View up to 50 member profiles",
+      "Priority profile visibility",
+      "Direct contact access",
+      "Premium support",
+    ],
+  },
+
+  {
+    id: "royal",
+    name: "Royal",
+    duration: "6 Months",
+    price: "1,499",
+    profileLimit: Infinity,
+    profileText: "View unlimited profiles",
+    description: "Our complete plan for a serious matrimonial journey.",
+    features: [
+      "Everything in Premium",
+      "View unlimited member profiles",
+      "Maximum profile visibility",
+      "Priority connection requests",
+      "Dedicated support",
+      "Royal member badge",
+    ],
+  },
+];
 
   const selected = plans.find((plan) => plan.id === selectedPlan);
 
@@ -176,7 +185,16 @@ function PlansPage() {
                   </p>
 
                 </div>
+{/* PROFILE LIMIT */}
+<div className="mb-5 rounded-lg bg-[#fff7e8] px-4 py-3 text-center">
+  <p className="text-[8px] font-semibold uppercase tracking-[1.5px] text-[#a67c35]">
+    Profile Access
+  </p>
 
+  <p className="mt-1 font-serif text-[17px] font-semibold text-[#8c1d18]">
+    {plan.profileText}
+  </p>
+</div>
 
                 {/* Features */}
                 <div className="space-y-3">
@@ -269,12 +287,14 @@ function PlansPage() {
   onClick={() => {
     localStorage.setItem(
       "selectedPlan",
-      JSON.stringify({
-        id: selected.id,
-        name: selected.name,
-        duration: selected.duration,
-        price: selected.price,
-      })
+     JSON.stringify({
+  id: selected.id,
+  name: selected.name,
+  duration: selected.duration,
+  price: selected.price,
+  profileLimit: selected.profileLimit,
+  profileText: selected.profileText,
+})
     );
 
     window.location.href = "/payment";
