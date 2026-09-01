@@ -481,13 +481,24 @@ function RegisterPage() {
                 </label>
 
                 <input
-                  type="tel"
-                  name="contactNumber"
-                  value={formData.contactNumber}
-                  onChange={handleChange}
-                  placeholder="10-digit mobile number"
-                  className={inputClass}
-                />
+  type="tel"
+  name="contactNumber"
+  value={formData.contactNumber}
+  onChange={(e) => {
+    const value = e.target.value.replace(/\D/g, "").slice(0, 10);
+
+    setFormData((prev) => ({
+      ...prev,
+      contactNumber: value,
+    }));
+  }}
+  placeholder="10-digit mobile number"
+  maxLength={10}
+  inputMode="numeric"
+  pattern="[0-9]{10}"
+  className={inputClass}
+  required
+/>
 
               </div>
 
