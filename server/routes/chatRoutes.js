@@ -7,6 +7,7 @@ import {
   getMyConversations,
   getMessages,
   sendMessage,
+  uploadChatImage,
 } from "../controllers/chatController.js";
 
 const router = express.Router();
@@ -52,6 +53,7 @@ router.get(
 router.post(
   "/:conversationId/message",
   authMiddleware,
+  uploadChatImage,
   sendMessage
 );
 

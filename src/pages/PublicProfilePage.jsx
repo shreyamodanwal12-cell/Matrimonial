@@ -47,7 +47,50 @@ const response = await fetch(
     setLoading(false);
   }
 };
+const handleSendInterest = async () => {
+  try {
+    const token = localStorage.getItem("token");
 
+    if (!token) {
+      alert("Please login to send interest.");
+      window.location.href = "/login";
+      return;
+    }
+
+    if (!profile?.user?.id) {
+      alert("Profile information is not available.");
+      return;
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/interests`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          receiver_id: profile.user.id,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    console.log("Send Interest Response:", data);
+
+    if (!response.ok || !data.success) {
+      alert(data.message || "Unable to send interest.");
+      return;
+    }
+
+    alert("Interest sent successfully! ❤️");
+  } catch (error) {
+    console.error("Send interest error:", error);
+    alert("Something went wrong while sending interest.");
+  }
+};
 
 const handleStartChat = async () => {
   try {
@@ -282,14 +325,12 @@ const handleStartChat = async () => {
                 </div>
 
                 <button
-                  type="button"
-                  onClick={() => {
-                    alert("Interest feature will be available soon.");
-                  }}
-                  className="mt-7 w-full rounded-md bg-[#8c1d18] px-5 py-3 text-sm font-semibold text-white hover:bg-[#751712]"
-                >
-                  Send Interest
-                </button>
+  type="button"
+  onClick={handleSendInterest}
+  className="mt-7 w-full rounded-md bg-[#8c1d18] px-5 py-3 text-sm font-semibold text-white hover:bg-[#751712]"
+>
+  ❤️ Send Interest
+</button>
 <button
   type="button"
   onClick={handleStartChat}

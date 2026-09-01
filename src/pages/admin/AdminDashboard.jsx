@@ -1,68 +1,277 @@
+import { useEffect, useState } from "react";
+import API_BASE_URL from "../../api/api";
 function AdminDashboard() {
-  const stats = [
-    {
-      title: "Total Members",
-      value: "12,540",
-      change: "+12.5%",
-      icon: "👥",
-    },
-    {
-      title: "Male Members",
-      value: "6,230",
-      change: "+8.2%",
-      icon: "👨",
-    },
-    {
-      title: "Female Members",
-      value: "6,310",
-      change: "+10.4%",
-      icon: "👩",
-    },
-    {
-      title: "Pending Profiles",
-      value: "128",
-      change: "Needs Review",
-      icon: "⏳",
-    },
-  ];
+  const [profiles, setProfiles] = useState([]);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState("");
+useEffect(() => {
+  fetchDashboardData();
+}, []);
 
-  const registrations = [
-    {
-      name: "Priya Sharma",
-      age: 27,
-      location: "Bangalore",
-      status: "Approved",
-      initial: "P",
-    },
-    {
-      name: "Rahul Verma",
-      age: 29,
-      location: "Delhi",
-      status: "Pending",
-      initial: "R",
-    },
-    {
-      name: "Anjali Patil",
-      age: 26,
-      location: "Mumbai",
-      status: "Approved",
-      initial: "A",
-    },
-    {
-      name: "Karthik Rao",
-      age: 30,
-      location: "Hyderabad",
-      status: "Pending",
-      initial: "K",
-    },
-  ];
+const fetchDashboardData = async () => {
+  try {
+    setLoading(true);
+    setError("");
 
-  const pendingApprovals = [
-    ["RS", "Riya Sharma", "Female • 26"],
-    ["AM", "Amit Mehta", "Male • 29"],
-    ["NK", "Neha Kulkarni", "Female • 27"],
-  ];
+    const token = localStorage.getItem("token");
 
+    if (!token) {
+      setError("Admin login required");
+      return;
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/profiles`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    console.log("Dashboard Profiles Response:", data);
+
+    if (!response.ok || !data.success) {
+      throw new Error(
+        data.message || "Unable to fetch dashboard data"
+      );
+    }
+console.log("All Dashboard Profiles:", data.profiles);
+console.log(
+  "Membership Data JSON:",
+  JSON.stringify(
+    data.profiles?.map((p) => ({
+      name: p.full_name,
+      membership: p.memberships,
+    })),
+    null,
+    2
+  )
+);
+
+console.log(
+  "Payment Data JSON:",
+  JSON.stringify(
+    data.profiles?.map((p) => ({
+      name: p.full_name,
+      payments: p.payments,
+    })),
+    null,
+    2
+  )
+);
+console.log(
+  "Profile Statuses:",
+  data.profiles?.map((p) => ({
+    name: p.full_name,
+    status: p.profile_status,
+  }))
+);
+
+console.log(
+  "Gender Data:",
+  data.profiles?.map((p) => ({
+    name: p.full_name,
+    gender:
+      p.matrimonial_profiles?.[0]?.gender ||
+      p.matrimonial_profiles?.gender ||
+      "No Gender",
+  }))
+);
+    setProfiles(data.profiles || []);
+  } catch (error) {
+    console.error("Dashboard Error:", error);
+    setError(error.message || "Unable to load dashboard");
+  } finally {
+    setLoading(false);
+  }
+};
+const totalMembers = profiles.length;
+
+const maleMembers = profiles.filter((profile) => {
+  const matrimonial =
+    profile.matrimonial_profiles?.[0] ||
+    profile.matrimonial_profiles ||
+    {};
+
+  return (
+    matrimonial.gender?.toLowerCase() === "male"
+  );
+}).length;
+
+const femaleMembers = profiles.filter((profile) => {
+  const matrimonial =
+    profile.matrimonial_profiles?.[0] ||
+    profile.matrimonial_profiles ||
+    {};
+
+  return (
+    matrimonial.gender?.toLowerCase() === "female"
+  );
+}).length;
+
+const pendingProfiles = profiles.filter(
+  (profile) =>
+    (profile.profile_status || "Pending").toLowerCase() ===
+    "pending"
+).length;
+const stats = [
+  {
+    title: "Total Members",
+    value: totalMembers,
+    change: "Current",
+    icon: "👥",
+  },
+  {
+    title: "Male Members",
+    value: maleMembers,
+    change: "Current",
+    icon: "👨",
+  },
+  {
+    title: "Female Members",
+    value: femaleMembers,
+    change: "Current",
+    icon: "👩",
+  },
+  {
+    title: "Pending Profiles",
+    value: pendingProfiles,
+    change: "Needs Review",
+    icon: "⏳",
+  },
+];
+const calculateAge = (birthDate) => {
+  if (!birthDate) return "";
+
+  const today = new Date();
+  const birth = new Date(birthDate);
+
+  let age =
+    today.getFullYear() -
+    birth.getFullYear();
+
+  const monthDifference =
+    today.getMonth() -
+    birth.getMonth();
+
+  if (
+    monthDifference < 0 ||
+    (monthDifference === 0 &&
+      today.getDate() < birth.getDate())
+  ) {
+    age--;
+  }
+
+  return age;
+};
+const registrations = [...profiles]
+  .sort(
+    (a, b) =>
+      new Date(b.created_at || 0) -
+      new Date(a.created_at || 0)
+  )
+  .slice(0, 5)
+  .map((profile) => {
+    const matrimonial =
+      profile.matrimonial_profiles?.[0] ||
+      profile.matrimonial_profiles ||
+      {};
+
+    const name =
+      profile.full_name || "Unknown Member";
+
+   return {
+  id: profile.id,
+  name,
+
+  age: matrimonial.birth_date
+    ? calculateAge(matrimonial.birth_date)
+    : "-",
+
+  location:
+    matrimonial.state ||
+    matrimonial.native_place ||
+    "Not specified",
+
+  status:
+    profile.profile_status || "Pending",
+
+  // =========================
+  // MEMBERSHIP / PACKAGE
+  // =========================
+  package:
+    profile.memberships?.length > 0
+      ? profile.memberships[profile.memberships.length - 1].plan_name
+      : "No Package",
+
+  membershipStatus:
+    profile.memberships?.length > 0
+      ? profile.memberships[profile.memberships.length - 1].status
+      : "No Membership",
+
+  // =========================
+  // PAYMENT
+  // =========================
+  paymentStatus:
+    profile.payments?.length > 0
+      ? profile.payments[profile.payments.length - 1].payment_status
+      : "No Payment",
+
+  initial:
+    name.charAt(0).toUpperCase(),
+};
+  });
+
+  const pendingApprovals = profiles
+  .filter(
+    (profile) =>
+      (profile.profile_status || "Pending").toLowerCase() ===
+      "pending"
+  )
+  .slice(0, 5)
+  .map((profile) => {
+    const matrimonial =
+      profile.matrimonial_profiles?.[0] ||
+      profile.matrimonial_profiles ||
+      {};
+
+    const name =
+      profile.full_name || "Unknown Member";
+
+    const gender =
+      matrimonial.gender || "Unknown";
+
+    const age = matrimonial.birth_date
+      ? calculateAge(matrimonial.birth_date)
+      : "-";
+
+    return [
+      name.charAt(0).toUpperCase(),
+      name,
+      `${gender} • ${age}`,
+    ];
+  });
+if (loading) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#faf7f2]">
+      <p className="text-[13px] text-[#806653]">
+        Loading dashboard...
+      </p>
+    </div>
+  );
+}
+if (error) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#faf7f2]">
+      <p className="text-[13px] text-red-700">
+        {error}
+      </p>
+    </div>
+  );
+}
   return (
     <div className="min-h-screen bg-[#faf7f2] text-[#3c2415]">
 
@@ -266,7 +475,16 @@ function AdminDashboard() {
                     <th className="px-4 py-3 text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
                       Status
                     </th>
+<th className="px-4 py-3 text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
+  Package
+</th>
 
+<th className="px-4 py-3 text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
+  Payment
+</th>
+<th className="px-4 py-3 text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
+  Membership
+</th>
                     <th className="px-4 py-3 text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
                       Action
                     </th>
@@ -333,16 +551,59 @@ function AdminDashboard() {
 
                       </td>
 
+{/* Package */}
+<td className="px-4 py-3.5">
+  <span className="rounded-full bg-[#f4e2c2] px-2.5 py-1 text-[8px] font-semibold text-[#8c1d18]">
+    {member.package}
+  </span>
+</td>
+
+{/* Payment */}
+<td className="px-4 py-3.5">
+  <span
+    className={`
+      rounded-full px-2.5 py-1 text-[8px] font-semibold
+      ${
+        member.paymentStatus?.toLowerCase() === "paid"
+          ? "bg-[#e7f6ed] text-[#287b51]"
+          : member.paymentStatus?.toLowerCase() === "pending"
+          ? "bg-[#fff1d8] text-[#b36b11]"
+          : "bg-[#f8e3e3] text-[#a33b32]"
+      }
+    `}
+  >
+    {member.paymentStatus}
+  </span>
+</td>
+{/* Membership */}
+<td className="px-4 py-3.5">
+  <span
+    className={`
+      rounded-full px-2.5 py-1 text-[8px] font-semibold
+      ${
+        member.membershipStatus?.toLowerCase() === "active"
+          ? "bg-[#e7f6ed] text-[#287b51]"
+          : "bg-[#f8e3e3] text-[#a33b32]"
+      }
+    `}
+  >
+    {member.membershipStatus}
+  </span>
+</td>
+
 
                       {/* Action */}
                       <td className="px-4 py-3.5">
 
-                        <button
-                          type="button"
-                          className="text-[10px] font-semibold text-[#8c1d18] hover:text-[#d92c2c]"
-                        >
-                          View
-                        </button>
+                       <button
+  type="button"
+  onClick={() => {
+    window.location.href = `/admin/profiles?view=${member.id}`;
+  }}
+  className="text-[10px] font-semibold text-[#8c1d18] hover:text-[#d92c2c]"
+>
+  View
+</button>
 
                       </td>
 
@@ -428,9 +689,9 @@ function AdminDashboard() {
 
                 </div>
 
-                <span className="rounded-full bg-[#fff1d8] px-2.5 py-1 text-[8px] font-semibold text-[#b36b11]">
-                  128 Pending
-                </span>
+               <span className="rounded-full bg-[#fff1d8] px-2.5 py-1 text-[8px] font-semibold text-[#b36b11]">
+  {pendingProfiles} Pending
+</span>
 
               </div>
 

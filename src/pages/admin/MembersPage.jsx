@@ -1,93 +1,258 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import API_BASE_URL from "../../api/api";
 
 function MembersPage() {
+  const [members, setMembers] = useState([]);
   const [search, setSearch] = useState("");
   const [gender, setGender] = useState("All");
   const [status, setStatus] = useState("All");
 
-  const members = [
-    {
-      id: 1,
-      name: "Priya Sharma",
-      age: 27,
-      gender: "Female",
-      location: "Bangalore",
-      profession: "Software Engineer",
-      date: "12 Aug 2026",
-      status: "Approved",
-      initial: "P",
-    },
-    {
-      id: 2,
-      name: "Rahul Verma",
-      age: 29,
-      gender: "Male",
-      location: "Delhi",
-      profession: "Business Owner",
-      date: "11 Aug 2026",
-      status: "Pending",
-      initial: "R",
-    },
-    {
-      id: 3,
-      name: "Anjali Patil",
-      age: 26,
-      gender: "Female",
-      location: "Mumbai",
-      profession: "Doctor",
-      date: "10 Aug 2026",
-      status: "Approved",
-      initial: "A",
-    },
-    {
-      id: 4,
-      name: "Karthik Rao",
-      age: 30,
-      gender: "Male",
-      location: "Hyderabad",
-      profession: "Architect",
-      date: "09 Aug 2026",
-      status: "Pending",
-      initial: "K",
-    },
-    {
-      id: 5,
-      name: "Neha Kulkarni",
-      age: 28,
-      gender: "Female",
-      location: "Pune",
-      profession: "HR Manager",
-      date: "08 Aug 2026",
-      status: "Approved",
-      initial: "N",
-    },
-    {
-      id: 6,
-      name: "Amit Mehta",
-      age: 31,
-      gender: "Male",
-      location: "Jaipur",
-      profession: "Chartered Accountant",
-      date: "07 Aug 2026",
-      status: "Suspended",
-      initial: "A",
-    },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const filteredMembers = members.filter((member) => {
-    const matchesSearch =
-      member.name.toLowerCase().includes(search.toLowerCase()) ||
-      member.location.toLowerCase().includes(search.toLowerCase()) ||
-      member.profession.toLowerCase().includes(search.toLowerCase());
+  // ================= FETCH MEMBERS =================
+  useEffect(() => {
+    fetchMembers();
+  }, []);
 
-    const matchesGender =
-      gender === "All" || member.gender === gender;
+  const fetchMembers = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-    const matchesStatus =
-      status === "All" || member.status === status;
+      const token = localStorage.getItem("token");
 
-    return matchesSearch && matchesGender && matchesStatus;
+      if (!token) {
+        throw new Error("Admin login required");
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/profiles`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      console.log("Members Response:", data);
+      console.log("All Members:", data.profiles);
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || "Unable to fetch members"
+        );
+      }
+
+      setMembers(data.profiles || []);
+    } catch (err) {
+      console.error("Members Error:", err);
+      setError(err.message || "Unable to load members");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ================= GET MATRIMONIAL DATA =================
+  const getMatrimonial = (member) => {
+    return (
+      member.matrimonial_profiles?.[0] ||
+      member.matrimonial_profiles ||
+      {}
+    );
+  };
+
+  // ================= AGE =================
+  const calculateAge = (birthDate) => {
+    if (!birthDate) return "";
+
+    const today = new Date();
+    const birth = new Date(birthDate);
+
+    let age =
+      today.getFullYear() -
+      birth.getFullYear();
+
+    const monthDifference =
+      today.getMonth() -
+      birth.getMonth();
+
+    if (
+      monthDifference < 0 ||
+      (monthDifference === 0 &&
+        today.getDate() < birth.getDate())
+    ) {
+      age--;
+    }
+
+    return age;
+  };
+
+  // ================= FORMAT DATE =================
+  const formatDate = (date) => {
+    if (!date) return "—";
+
+    return new Date(date).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  // ================= NORMALIZE MEMBERS =================
+  const normalizedMembers = members.map((member) => {
+    const matrimonial = getMatrimonial(member);
+
+    const name =
+      member.full_name || "Profile";
+
+    const memberGender =
+      matrimonial.gender || "No Gender";
+
+    const age = calculateAge(
+      matrimonial.birth_date
+    );
+
+    const location =
+      matrimonial.state ||
+      matrimonial.native_place ||
+      "Not specified";
+
+    const profession =
+      matrimonial.profession ||
+      "Not specified";
+
+    const memberStatus =
+      member.profile_status || "Pending";
+
+    return {
+      ...member,
+
+      displayName: name,
+      displayGender: memberGender,
+      displayAge: age,
+      displayLocation: location,
+      displayProfession: profession,
+      displayStatus: memberStatus,
+      displayDate: formatDate(member.created_at),
+
+      initial: name
+        .charAt(0)
+        .toUpperCase(),
+    };
   });
+
+  // ================= FILTER =================
+  const filteredMembers =
+    normalizedMembers.filter((member) => {
+      const searchText =
+        search.toLowerCase();
+
+      const matchesSearch =
+        member.displayName
+          .toLowerCase()
+          .includes(searchText) ||
+
+        member.displayLocation
+          .toLowerCase()
+          .includes(searchText) ||
+
+        member.displayProfession
+          .toLowerCase()
+          .includes(searchText);
+
+      const matchesGender =
+        gender === "All" ||
+        member.displayGender === gender;
+
+      const matchesStatus =
+        status === "All" ||
+        member.displayStatus === status;
+
+      return (
+        matchesSearch &&
+        matchesGender &&
+        matchesStatus
+      );
+    });
+
+  // ================= COUNTS =================
+  const totalMembers =
+    normalizedMembers.length;
+
+  const activeMembers =
+    normalizedMembers.filter(
+      (member) =>
+        member.is_active === true
+    ).length;
+
+  const pendingMembers =
+    normalizedMembers.filter(
+      (member) =>
+        member.displayStatus === "Pending"
+    ).length;
+
+  const suspendedMembers =
+    normalizedMembers.filter(
+      (member) =>
+        member.displayStatus === "Suspended"
+    ).length;
+
+  // ================= VIEW =================
+  const handleView = (member) => {
+    console.log("View Member:", member);
+
+    // Existing working admin Profiles page
+    window.location.href =
+      "/admin/profiles";
+  };
+
+  // ================= EDIT =================
+  const handleEdit = (member) => {
+    console.log("Edit Member:", member);
+
+    // For now open existing profile management page
+    window.location.href =
+      "/admin/profiles";
+  };
+
+  // ================= ADD MEMBER =================
+  const handleAddMember = () => {
+    // Registration/profile creation flow
+    window.location.href =
+      "/register";
+  };
+
+  // ================= LOADING =================
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#faf7f2] p-10 text-center">
+        <p className="text-[13px] text-[#806653]">
+          Loading members...
+        </p>
+      </div>
+    );
+  }
+
+  // ================= ERROR =================
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#faf7f2] p-10 text-center">
+        <p className="text-[13px] text-red-700">
+          {error}
+        </p>
+
+        <button
+          onClick={fetchMembers}
+          className="mt-4 rounded-lg bg-[#8c1d18] px-5 py-2 text-[10px] text-white"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#faf7f2] text-[#3c2415]">
@@ -109,9 +274,10 @@ function MembersPage() {
 
           <button
             type="button"
-            className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-[#eadfce] text-[14px] text-[#6d5142]"
+            className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-[#eadfce] text-[14px]"
           >
             🔔
+
             <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-[#d92c2c]" />
           </button>
 
@@ -133,11 +299,10 @@ function MembersPage() {
 
       </header>
 
-
       {/* ================= CONTENT ================= */}
       <main className="mx-auto max-w-[1400px] p-4 sm:p-7">
 
-        {/* Page Heading */}
+        {/* HEADING */}
         <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
 
           <div>
@@ -152,13 +317,13 @@ function MembersPage() {
 
           <button
             type="button"
+            onClick={handleAddMember}
             className="w-fit rounded-lg bg-[#8c1d18] px-5 py-2.5 text-[10px] font-semibold text-white shadow-sm transition hover:bg-[#701510]"
           >
             + Add Member
           </button>
 
         </div>
-
 
         {/* ================= SUMMARY ================= */}
         <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -169,7 +334,7 @@ function MembersPage() {
             </p>
 
             <p className="mt-1 font-serif text-[24px] font-semibold text-[#4a1712]">
-              12,540
+              {totalMembers}
             </p>
           </div>
 
@@ -179,7 +344,7 @@ function MembersPage() {
             </p>
 
             <p className="mt-1 font-serif text-[24px] font-semibold text-[#287b51]">
-              11,920
+              {activeMembers}
             </p>
           </div>
 
@@ -189,7 +354,7 @@ function MembersPage() {
             </p>
 
             <p className="mt-1 font-serif text-[24px] font-semibold text-[#b36b11]">
-              128
+              {pendingMembers}
             </p>
           </div>
 
@@ -199,19 +364,17 @@ function MembersPage() {
             </p>
 
             <p className="mt-1 font-serif text-[24px] font-semibold text-[#b63b3b]">
-              492
+              {suspendedMembers}
             </p>
           </div>
 
         </div>
 
-
-        {/* ================= FILTER CARD ================= */}
+        {/* ================= FILTER ================= */}
         <div className="rounded-xl border border-[#eadfce] bg-white p-4 shadow-[0_4px_18px_rgba(73,38,20,0.04)] sm:p-5">
 
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
 
-            {/* Search */}
             <div className="flex flex-1 items-center rounded-lg border border-[#eadfce] bg-[#fffaf5] px-3">
 
               <span className="text-[15px] text-[#a67c35]">
@@ -221,47 +384,70 @@ function MembersPage() {
               <input
                 type="text"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) =>
+                  setSearch(e.target.value)
+                }
                 placeholder="Search by name, location or profession..."
                 className="h-10 w-full bg-transparent px-2 text-[10px] outline-none placeholder:text-[#b5a293]"
               />
 
             </div>
 
-
-            {/* Gender */}
             <select
               value={gender}
-              onChange={(e) => setGender(e.target.value)}
-              className="h-10 rounded-lg border border-[#eadfce] bg-[#fffaf5] px-3 text-[10px] text-[#563927] outline-none focus:border-[#c58a25]"
+              onChange={(e) =>
+                setGender(e.target.value)
+              }
+              className="h-10 rounded-lg border border-[#eadfce] bg-[#fffaf5] px-3 text-[10px] text-[#563927] outline-none"
             >
-              <option value="All">All Genders</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
+              <option value="All">
+                All Genders
+              </option>
+
+              <option value="Male">
+                Male
+              </option>
+
+              <option value="Female">
+                Female
+              </option>
             </select>
 
-
-            {/* Status */}
             <select
               value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="h-10 rounded-lg border border-[#eadfce] bg-[#fffaf5] px-3 text-[10px] text-[#563927] outline-none focus:border-[#c58a25]"
+              onChange={(e) =>
+                setStatus(e.target.value)
+              }
+              className="h-10 rounded-lg border border-[#eadfce] bg-[#fffaf5] px-3 text-[10px] text-[#563927] outline-none"
             >
-              <option value="All">All Status</option>
-              <option value="Approved">Approved</option>
-              <option value="Pending">Pending</option>
-              <option value="Suspended">Suspended</option>
+              <option value="All">
+                All Status
+              </option>
+
+              <option value="Approved">
+                Approved
+              </option>
+
+              <option value="Pending">
+                Pending
+              </option>
+
+              <option value="Rejected">
+                Rejected
+              </option>
+
+              <option value="Suspended">
+                Suspended
+              </option>
             </select>
 
           </div>
 
         </div>
 
-
-        {/* ================= MEMBERS TABLE ================= */}
+        {/* ================= TABLE ================= */}
         <div className="mt-5 overflow-hidden rounded-xl border border-[#eadfce] bg-white shadow-[0_4px_18px_rgba(73,38,20,0.04)]">
 
-          {/* Table Header */}
           <div className="flex items-center justify-between border-b border-[#eadfce] px-5 py-4">
 
             <div>
@@ -270,14 +456,14 @@ function MembersPage() {
               </h3>
 
               <p className="mt-0.5 text-[9px] text-[#9a806f]">
-                Showing {filteredMembers.length} members
+                Showing {filteredMembers.length} of{" "}
+                {totalMembers} members
               </p>
             </div>
 
           </div>
 
-
-          {/* Desktop Table */}
+          {/* DESKTOP */}
           <div className="hidden overflow-x-auto md:block">
 
             <table className="w-full">
@@ -285,62 +471,69 @@ function MembersPage() {
               <thead>
                 <tr className="border-b border-[#eadfce] bg-[#fffaf5]">
 
-                  <th className="px-5 py-3 text-left text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
+                  <th className="px-5 py-3 text-left text-[9px] uppercase tracking-[1px] text-[#9a806f]">
                     Member
                   </th>
 
-                  <th className="px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
+                  <th className="px-4 py-3 text-left text-[9px] uppercase tracking-[1px] text-[#9a806f]">
                     Age
                   </th>
 
-                  <th className="px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
+                  <th className="px-4 py-3 text-left text-[9px] uppercase tracking-[1px] text-[#9a806f]">
                     Gender
                   </th>
 
-                  <th className="px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
+                  <th className="px-4 py-3 text-left text-[9px] uppercase tracking-[1px] text-[#9a806f]">
                     Location
                   </th>
 
-                  <th className="px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
+                  <th className="px-4 py-3 text-left text-[9px] uppercase tracking-[1px] text-[#9a806f]">
                     Profession
                   </th>
 
-                  <th className="px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
+                  <th className="px-4 py-3 text-left text-[9px] uppercase tracking-[1px] text-[#9a806f]">
                     Status
                   </th>
 
-                  <th className="px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
+                  <th className="px-4 py-3 text-left text-[9px] uppercase tracking-[1px] text-[#9a806f]">
                     Action
                   </th>
 
                 </tr>
               </thead>
 
-
               <tbody>
 
                 {filteredMembers.map((member) => (
+
                   <tr
                     key={member.id}
-                    className="border-b border-[#f0e7dc] last:border-0 transition hover:bg-[#fffaf5]"
+                    className="border-b border-[#f0e7dc] last:border-0 hover:bg-[#fffaf5]"
                   >
 
-                    {/* Member */}
                     <td className="px-5 py-4">
 
                       <div className="flex items-center gap-3">
 
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#8c1d18] font-serif text-[12px] font-semibold text-[#f5c45e]">
-                          {member.initial}
-                        </div>
+                        {member.profile_photo ? (
+                          <img
+                            src={member.profile_photo}
+                            alt={member.displayName}
+                            className="h-9 w-9 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#8c1d18] font-serif text-[12px] font-semibold text-[#f5c45e]">
+                            {member.initial}
+                          </div>
+                        )}
 
                         <div>
                           <p className="text-[10px] font-semibold text-[#4f3425]">
-                            {member.name}
+                            {member.displayName}
                           </p>
 
                           <p className="mt-0.5 text-[8px] text-[#a28c7c]">
-                            Joined {member.date}
+                            Joined {member.displayDate}
                           </p>
                         </div>
 
@@ -348,59 +541,49 @@ function MembersPage() {
 
                     </td>
 
-
-                    {/* Age */}
                     <td className="px-4 py-4 text-[10px] text-[#806653]">
-                      {member.age}
+                      {member.displayAge || "—"}
                     </td>
 
-
-                    {/* Gender */}
                     <td className="px-4 py-4 text-[10px] text-[#806653]">
-                      {member.gender}
+                      {member.displayGender}
                     </td>
 
-
-                    {/* Location */}
                     <td className="px-4 py-4 text-[10px] text-[#806653]">
-                      {member.location}
+                      {member.displayLocation}
                     </td>
 
-
-                    {/* Profession */}
                     <td className="px-4 py-4 text-[10px] text-[#806653]">
-                      {member.profession}
+                      {member.displayProfession}
                     </td>
 
-
-                    {/* Status */}
                     <td className="px-4 py-4">
 
                       <span
-                        className={`
-                          rounded-full px-2.5 py-1 text-[8px] font-semibold
-                          ${
-                            member.status === "Approved"
-                              ? "bg-[#e7f6ed] text-[#287b51]"
-                              : member.status === "Pending"
-                                ? "bg-[#fff1d8] text-[#b36b11]"
+                        className={`rounded-full px-2.5 py-1 text-[8px] font-semibold ${
+                          member.displayStatus === "Approved"
+                            ? "bg-[#e7f6ed] text-[#287b51]"
+                            : member.displayStatus === "Pending"
+                              ? "bg-[#fff1d8] text-[#b36b11]"
+                              : member.displayStatus === "Rejected"
+                                ? "bg-[#f8e3e3] text-[#b63b3b]"
                                 : "bg-[#f8e3e3] text-[#b63b3b]"
-                          }
-                        `}
+                        }`}
                       >
-                        {member.status}
+                        {member.displayStatus}
                       </span>
 
                     </td>
 
-
-                    {/* Action */}
                     <td className="px-4 py-4">
 
                       <div className="flex items-center gap-2">
 
                         <button
                           type="button"
+                          onClick={() =>
+                            handleView(member)
+                          }
                           className="rounded-md border border-[#eadfce] px-2.5 py-1.5 text-[9px] font-medium text-[#8c1d18] transition hover:bg-[#fff5e8]"
                         >
                           View
@@ -408,6 +591,9 @@ function MembersPage() {
 
                         <button
                           type="button"
+                          onClick={() =>
+                            handleEdit(member)
+                          }
                           className="rounded-md border border-[#eadfce] px-2.5 py-1.5 text-[9px] font-medium text-[#806653] transition hover:bg-[#fff5e8]"
                         >
                           Edit
@@ -418,6 +604,7 @@ function MembersPage() {
                     </td>
 
                   </tr>
+
                 ))}
 
               </tbody>
@@ -426,11 +613,11 @@ function MembersPage() {
 
           </div>
 
-
-          {/* ================= MOBILE CARDS ================= */}
+          {/* ================= MOBILE ================= */}
           <div className="divide-y divide-[#eadfce] md:hidden">
 
             {filteredMembers.map((member) => (
+
               <div
                 key={member.id}
                 className="p-4"
@@ -440,57 +627,62 @@ function MembersPage() {
 
                   <div className="flex items-center gap-3">
 
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#8c1d18] font-serif text-[13px] font-semibold text-[#f5c45e]">
-                      {member.initial}
-                    </div>
+                    {member.profile_photo ? (
+                      <img
+                        src={member.profile_photo}
+                        alt={member.displayName}
+                        className="h-10 w-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#8c1d18] font-serif text-[13px] font-semibold text-[#f5c45e]">
+                        {member.initial}
+                      </div>
+                    )}
 
                     <div>
 
                       <p className="text-[11px] font-semibold text-[#4f3425]">
-                        {member.name}
+                        {member.displayName}
                       </p>
 
                       <p className="mt-0.5 text-[9px] text-[#9a806f]">
-                        {member.age} • {member.gender}
+                        {member.displayAge || "—"} •{" "}
+                        {member.displayGender}
                       </p>
 
                       <p className="mt-0.5 text-[9px] text-[#9a806f]">
-                        {member.location}
+                        {member.displayLocation}
                       </p>
 
                     </div>
 
                   </div>
 
-
                   <span
-                    className={`
-                      rounded-full px-2 py-1 text-[8px] font-semibold
-                      ${
-                        member.status === "Approved"
-                          ? "bg-[#e7f6ed] text-[#287b51]"
-                          : member.status === "Pending"
-                            ? "bg-[#fff1d8] text-[#b36b11]"
-                            : "bg-[#f8e3e3] text-[#b63b3b]"
-                      }
-                    `}
+                    className={`rounded-full px-2 py-1 text-[8px] font-semibold ${
+                      member.displayStatus === "Approved"
+                        ? "bg-[#e7f6ed] text-[#287b51]"
+                        : "bg-[#fff1d8] text-[#b36b11]"
+                    }`}
                   >
-                    {member.status}
+                    {member.displayStatus}
                   </span>
 
                 </div>
 
-
                 <div className="mt-3 flex items-center justify-between">
 
                   <p className="text-[9px] text-[#806653]">
-                    {member.profession}
+                    {member.displayProfession}
                   </p>
 
                   <div className="flex gap-2">
 
                     <button
                       type="button"
+                      onClick={() =>
+                        handleView(member)
+                      }
                       className="rounded-md border border-[#eadfce] px-3 py-1.5 text-[9px] text-[#8c1d18]"
                     >
                       View
@@ -498,6 +690,9 @@ function MembersPage() {
 
                     <button
                       type="button"
+                      onClick={() =>
+                        handleEdit(member)
+                      }
                       className="rounded-md border border-[#eadfce] px-3 py-1.5 text-[9px] text-[#806653]"
                     >
                       Edit
@@ -508,12 +703,12 @@ function MembersPage() {
                 </div>
 
               </div>
+
             ))}
 
           </div>
 
-
-          {/* Empty State */}
+          {/* EMPTY */}
           {filteredMembers.length === 0 && (
             <div className="px-5 py-16 text-center">
 
@@ -534,56 +729,13 @@ function MembersPage() {
 
         </div>
 
-
-        {/* ================= PAGINATION ================= */}
-        <div className="mt-5 flex flex-col items-center justify-between gap-3 sm:flex-row">
+        {/* ================= FOOTER COUNT ================= */}
+        <div className="mt-5 flex justify-between">
 
           <p className="text-[9px] text-[#9a806f]">
-            Showing 1–6 of 12,540 members
+            Showing {filteredMembers.length} of{" "}
+            {totalMembers} members
           </p>
-
-          <div className="flex items-center gap-1">
-
-            <button
-              type="button"
-              className="flex h-8 w-8 items-center justify-center rounded-md border border-[#eadfce] bg-white text-[10px] text-[#9a806f]"
-            >
-              ‹
-            </button>
-
-            <button
-              type="button"
-              className="flex h-8 w-8 items-center justify-center rounded-md bg-[#8c1d18] text-[10px] font-semibold text-white"
-            >
-              1
-            </button>
-
-            <button
-              type="button"
-              className="flex h-8 w-8 items-center justify-center rounded-md border border-[#eadfce] bg-white text-[10px] text-[#806653]"
-            >
-              2
-            </button>
-
-            <button
-              type="button"
-              className="flex h-8 w-8 items-center justify-center rounded-md border border-[#eadfce] bg-white text-[10px] text-[#806653]"
-            >
-              3
-            </button>
-
-            <span className="px-1 text-[10px] text-[#9a806f]">
-              ...
-            </span>
-
-            <button
-              type="button"
-              className="flex h-8 w-8 items-center justify-center rounded-md border border-[#eadfce] bg-white text-[10px] text-[#806653]"
-            >
-              ›
-            </button>
-
-          </div>
 
         </div>
 

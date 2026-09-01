@@ -26,6 +26,8 @@ import RefundPolicyPage from "./pages/RefundPolicyPage";
 import SubmitTestimonialPage from "./pages/SubmitTestimonialPage";
 import AdminTestimonialsPage from "./pages/admin/AdminTestimonialsPage";
 import AadhaarVerificationPage from "./pages/AadhaarVerificationPage";
+import InterestRequestsPage from "./pages/InterestRequestsPage";
+import MyInterestsPage from "./pages/MyInterestsPage";
 
 function App() {
   const path = window.location.pathname;
@@ -92,6 +94,13 @@ if (path === "/refund-policy") {
 }
 if (path === "/submit-testimonial") {
   return <SubmitTestimonialPage />;
+}
+
+if (path === "/interest-requests") {
+  return <InterestRequestsPage />;
+}
+if (path === "/my-interests") {
+  return <MyInterestsPage />;
 }
   // ================================
   // ADMIN PROTECTION

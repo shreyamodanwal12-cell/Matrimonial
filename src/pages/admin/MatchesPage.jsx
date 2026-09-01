@@ -1,128 +1,260 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 function MatchesPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
   const [selectedMatch, setSelectedMatch] = useState(null);
 
-  const matches = [
-    {
-      id: 1,
-      personOne: "Rahul Verma",
-      personOneAge: 29,
-      personOneLocation: "Delhi",
-      personOneProfession: "Software Engineer",
-      personTwo: "Priya Sharma",
-      personTwoAge: 27,
-      personTwoLocation: "Bangalore",
-      personTwoProfession: "Doctor",
-      matchDate: "12 Aug 2026",
-      status: "Mutual",
-      compatibility: "94%",
-      oneInitial: "R",
-      twoInitial: "P",
-    },
-    {
-      id: 2,
-      personOne: "Amit Mehta",
-      personOneAge: 30,
-      personOneLocation: "Mumbai",
-      personOneProfession: "Business Owner",
-      personTwo: "Neha Kulkarni",
-      personTwoAge: 28,
-      personTwoLocation: "Pune",
-      personTwoProfession: "HR Manager",
-      matchDate: "11 Aug 2026",
-      status: "Mutual",
-      compatibility: "91%",
-      oneInitial: "A",
-      twoInitial: "N",
-    },
-    {
-      id: 3,
-      personOne: "Karan Singh",
-      personOneAge: 31,
-      personOneLocation: "Jaipur",
-      personOneProfession: "Architect",
-      personTwo: "Riya Sharma",
-      personTwoAge: 26,
-      personTwoLocation: "Delhi",
-      personTwoProfession: "Software Engineer",
-      matchDate: "10 Aug 2026",
-      status: "New",
-      compatibility: "88%",
-      oneInitial: "K",
-      twoInitial: "R",
-    },
-    {
-      id: 4,
-      personOne: "Arjun Rao",
-      personOneAge: 30,
-      personOneLocation: "Hyderabad",
-      personOneProfession: "Product Manager",
-      personTwo: "Sneha Patel",
-      personTwoAge: 25,
-      personTwoLocation: "Ahmedabad",
-      personTwoProfession: "Doctor",
-      matchDate: "09 Aug 2026",
-      status: "Mutual",
-      compatibility: "89%",
-      oneInitial: "A",
-      twoInitial: "S",
-    },
-    {
-      id: 5,
-      personOne: "Rohit Malhotra",
-      personOneAge: 29,
-      personOneLocation: "Chandigarh",
-      personOneProfession: "CA",
-      personTwo: "Pooja Mehta",
-      personTwoAge: 27,
-      personTwoLocation: "Gurgaon",
-      personTwoProfession: "Teacher",
-      matchDate: "08 Aug 2026",
-      status: "New",
-      compatibility: "86%",
-      oneInitial: "R",
-      twoInitial: "P",
-    },
-    {
-      id: 6,
-      personOne: "Vikas Gupta",
-      personOneAge: 32,
-      personOneLocation: "Noida",
-      personOneProfession: "Marketing Manager",
-      personTwo: "Anjali Patil",
-      personTwoAge: 28,
-      personTwoLocation: "Mumbai",
-      personTwoProfession: "Designer",
-      matchDate: "07 Aug 2026",
-      status: "Closed",
-      compatibility: "79%",
-      oneInitial: "V",
-      twoInitial: "A",
-    },
-  ];
+  const [matches, setMatches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const filteredMatches = matches.filter((match) => {
-    const query = search.toLowerCase();
+  const API_BASE_URL =
+    import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
-    const matchesSearch =
-      match.personOne.toLowerCase().includes(query) ||
-      match.personTwo.toLowerCase().includes(query) ||
-      match.personOneLocation.toLowerCase().includes(query) ||
-      match.personTwoLocation.toLowerCase().includes(query);
+  // ============================
+  // FETCH MATCHES
+  // ============================
+  useEffect(() => {
+    const fetchMatches = async () => {
+      try {
+        setLoading(true);
+        setError("");
 
-    const matchesStatus =
-      status === "All" || match.status === status;
+        const token = localStorage.getItem("token");
 
-    return matchesSearch && matchesStatus;
-  });
+        if (!token) {
+          throw new Error("Admin login token not found.");
+        }
+
+        const response = await fetch(
+          `${API_BASE_URL}/api/interests/admin/matches`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to fetch matches");
+        }
+
+        setMatches(data.matches || []);
+      } catch (err) {
+        console.error("Fetch matches error:", err);
+        setError(err.message || "Failed to load matches");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMatches();
+  }, [API_BASE_URL]);
+
+  // ============================
+  // AGE CALCULATOR
+  // ============================
+  const calculateAge = (birthDate) => {
+    if (!birthDate) return "N/A";
+
+    const birth = new Date(birthDate);
+    const today = new Date();
+
+    let age = today.getFullYear() - birth.getFullYear();
+
+    const monthDifference = today.getMonth() - birth.getMonth();
+
+    if (
+      monthDifference < 0 ||
+      (monthDifference === 0 && today.getDate() < birth.getDate())
+    ) {
+      age--;
+    }
+
+    return age >= 0 ? age : "N/A";
+  };
+
+  // ============================
+  // FORMAT DATE
+  // ============================
+  const formatDate = (date) => {
+    if (!date) return "N/A";
+
+    return new Date(date).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  // ============================
+  // INITIALS
+  // ============================
+  const getInitial = (name) => {
+    if (!name) return "?";
+
+    return name.trim().charAt(0).toUpperCase();
+  };
+
+  // ============================
+  // FILTER MATCHES
+  // ============================
+  const filteredMatches = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    return matches.filter((match) => {
+      const sender = match.sender;
+      const receiver = match.receiver;
+
+      const senderProfile = sender?.matrimonial_profiles;
+      const receiverProfile = receiver?.matrimonial_profiles;
+
+      const searchableValues = [
+        sender?.full_name,
+        receiver?.full_name,
+
+        senderProfile?.state,
+        receiverProfile?.state,
+
+        senderProfile?.address,
+        receiverProfile?.address,
+
+        senderProfile?.profession,
+        receiverProfile?.profession,
+
+        senderProfile?.education,
+        receiverProfile?.education,
+      ];
+
+      const matchesSearch =
+        query === "" ||
+        searchableValues.some((value) =>
+          value?.toString().toLowerCase().includes(query)
+        );
+
+      const matchesStatus =
+        status === "All" || match.status === status;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [matches, search, status]);
+
+  // ============================
+  // REAL STATS
+  // ============================
+  const totalMatches = matches.length;
+
+  const acceptedMatches = matches.filter(
+    (match) => match.status === "accepted"
+  ).length;
+
+  const pendingMatches = matches.filter(
+    (match) => match.status === "pending"
+  ).length;
+
+  const rejectedMatches = matches.filter(
+    (match) => match.status === "rejected"
+  ).length;
+
+  const successRate =
+    totalMatches > 0
+      ? ((acceptedMatches / totalMatches) * 100).toFixed(1)
+      : "0.0";
+
+  // ============================
+  // STATUS LABEL
+  // ============================
+  const getStatusLabel = (matchStatus) => {
+    if (!matchStatus) return "Unknown";
+
+    switch (matchStatus.toLowerCase()) {
+      case "accepted":
+        return "Accepted";
+
+      case "pending":
+        return "Pending";
+
+      case "rejected":
+        return "Rejected";
+
+      case "closed":
+        return "Closed";
+
+      default:
+        return matchStatus.charAt(0).toUpperCase() + matchStatus.slice(1);
+    }
+  };
+
+  // ============================
+  // STATUS STYLE
+  // ============================
+  const getStatusClass = (matchStatus) => {
+    switch (matchStatus?.toLowerCase()) {
+      case "accepted":
+        return "bg-[#e7f6ed] text-[#287b51]";
+
+      case "pending":
+        return "bg-[#fff1d8] text-[#b36b11]";
+
+      case "rejected":
+        return "bg-[#f8e3e3] text-[#b63b3b]";
+
+      case "closed":
+        return "bg-[#eeeeee] text-[#666666]";
+
+      default:
+        return "bg-[#f4e8dc] text-[#806653]";
+    }
+  };
+
+  // ============================
+  // PROFILE PHOTO
+  // ============================
+  const ProfileAvatar = ({
+    person,
+    type = "sender",
+    large = false,
+  }) => {
+    const name = person?.full_name || "Unknown";
+    const photo = person?.profile_photo;
+
+    const sizeClass = large ? "h-16 w-16 text-[21px]" : "h-10 w-10 text-[12px]";
+
+    if (photo) {
+      return (
+        <img
+          src={photo}
+          alt={name}
+          className={`${sizeClass} rounded-full object-cover ring-2 ring-[#eadfce]`}
+        />
+      );
+    }
+
+    return (
+      <div
+        className={`${sizeClass} flex items-center justify-center rounded-full font-serif font-semibold ${
+          type === "sender"
+            ? "bg-[#8c1d18] text-[#f5c45e]"
+            : "bg-[#f4e2c2] text-[#8c1d18]"
+        }`}
+      >
+        {getInitial(name)}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#faf7f2] text-[#3c2415]">
 
-      {/* ================= TOPBAR ================= */}
+      {/* ===================================================== */}
+      {/* TOPBAR */}
+      {/* ===================================================== */}
+
       <header className="sticky top-0 z-20 flex h-[78px] items-center justify-between border-b border-[#eadfce] bg-white/95 px-4 backdrop-blur sm:px-7">
 
         <div>
@@ -142,6 +274,7 @@ function MatchesPage() {
             className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-[#eadfce] text-[14px] text-[#6d5142]"
           >
             🔔
+
             <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-[#d92c2c]" />
           </button>
 
@@ -163,10 +296,14 @@ function MatchesPage() {
       </header>
 
 
-      {/* ================= MAIN ================= */}
+      {/* ===================================================== */}
+      {/* MAIN */}
+      {/* ===================================================== */}
+
       <main className="mx-auto max-w-[1400px] p-4 sm:p-7">
 
         {/* Heading */}
+
         <div className="mb-6">
 
           <h2 className="font-serif text-[28px] font-semibold text-[#4a1712]">
@@ -174,83 +311,121 @@ function MatchesPage() {
           </h2>
 
           <p className="mt-1 text-[11px] text-[#8c7566]">
-            Monitor successful connections and compatibility between members.
+            Monitor successful connections between members.
           </p>
 
         </div>
 
 
-        {/* ================= STATS ================= */}
+        {/* ===================================================== */}
+        {/* ERROR */}
+        {/* ===================================================== */}
+
+        {error && (
+          <div className="mb-5 rounded-xl border border-[#f0caca] bg-[#fff1f1] px-4 py-3">
+
+            <p className="text-[10px] font-semibold text-[#b63b3b]">
+              {error}
+            </p>
+
+          </div>
+        )}
+
+
+        {/* ===================================================== */}
+        {/* STATS */}
+        {/* ===================================================== */}
+
         <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
 
+          {/* Total */}
+
           <div className="rounded-xl border border-[#eadfce] bg-white p-5">
+
             <p className="text-[9px] text-[#9a806f]">
               Total Matches
             </p>
 
             <p className="mt-1 font-serif text-[27px] font-semibold text-[#4a1712]">
-              2,486
+              {loading ? "..." : totalMatches}
             </p>
 
             <p className="mt-1 text-[8px] text-[#9a806f]">
-              Successful connections
+              Total connections
             </p>
+
           </div>
 
 
-          <div className="rounded-xl border border-[#eadfce] bg-white p-5">
-            <p className="text-[9px] text-[#9a806f]">
-              New Matches
-            </p>
-
-            <p className="mt-1 font-serif text-[27px] font-semibold text-[#b36b11]">
-              84
-            </p>
-
-            <p className="mt-1 text-[8px] text-[#9a806f]">
-              Created this month
-            </p>
-          </div>
-
+          {/* Accepted */}
 
           <div className="rounded-xl border border-[#eadfce] bg-white p-5">
+
             <p className="text-[9px] text-[#9a806f]">
-              Mutual Matches
+              Accepted Matches
             </p>
 
             <p className="mt-1 font-serif text-[27px] font-semibold text-[#287b51]">
-              1,932
+              {loading ? "..." : acceptedMatches}
             </p>
 
             <p className="mt-1 text-[8px] text-[#9a806f]">
-              Both members interested
+              Successfully accepted
             </p>
+
           </div>
 
 
+          {/* Pending */}
+
           <div className="rounded-xl border border-[#eadfce] bg-white p-5">
+
+            <p className="text-[9px] text-[#9a806f]">
+              Pending Matches
+            </p>
+
+            <p className="mt-1 font-serif text-[27px] font-semibold text-[#b36b11]">
+              {loading ? "..." : pendingMatches}
+            </p>
+
+            <p className="mt-1 text-[8px] text-[#9a806f]">
+              Awaiting response
+            </p>
+
+          </div>
+
+
+          {/* Success */}
+
+          <div className="rounded-xl border border-[#eadfce] bg-white p-5">
+
             <p className="text-[9px] text-[#9a806f]">
               Success Rate
             </p>
 
             <p className="mt-1 font-serif text-[27px] font-semibold text-[#8c1d18]">
-              78.4%
+              {loading ? "..." : `${successRate}%`}
             </p>
 
             <p className="mt-1 text-[8px] text-[#9a806f]">
-              Overall match success
+              Accepted / total matches
             </p>
+
           </div>
 
         </div>
 
 
-        {/* ================= FILTERS ================= */}
+        {/* ===================================================== */}
+        {/* FILTERS */}
+        {/* ===================================================== */}
+
         <div className="rounded-xl border border-[#eadfce] bg-white p-4 shadow-[0_4px_18px_rgba(73,38,20,0.04)] sm:p-5">
 
           <div className="flex flex-col gap-3 lg:flex-row">
 
             {/* Search */}
+
             <div className="flex flex-1 items-center rounded-lg border border-[#eadfce] bg-[#fffaf5] px-3">
 
               <span className="text-[15px] text-[#a67c35]">
@@ -261,7 +436,7 @@ function MatchesPage() {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search member name or location..."
+                placeholder="Search member name, location, profession..."
                 className="h-10 w-full bg-transparent px-2 text-[10px] outline-none placeholder:text-[#b5a293]"
               />
 
@@ -269,15 +444,33 @@ function MatchesPage() {
 
 
             {/* Status */}
+
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
               className="h-10 rounded-lg border border-[#eadfce] bg-[#fffaf5] px-3 text-[10px] text-[#563927] outline-none focus:border-[#c58a25]"
             >
-              <option value="All">All Matches</option>
-              <option value="New">New</option>
-              <option value="Mutual">Mutual</option>
-              <option value="Closed">Closed</option>
+
+              <option value="All">
+                All Matches
+              </option>
+
+              <option value="accepted">
+                Accepted
+              </option>
+
+              <option value="pending">
+                Pending
+              </option>
+
+              <option value="rejected">
+                Rejected
+              </option>
+
+              <option value="closed">
+                Closed
+              </option>
+
             </select>
 
           </div>
@@ -285,13 +478,16 @@ function MatchesPage() {
         </div>
 
 
-        {/* ================= MATCH LIST ================= */}
+        {/* ===================================================== */}
+        {/* MATCH LIST */}
+        {/* ===================================================== */}
+
         <div className="mt-5 overflow-hidden rounded-xl border border-[#eadfce] bg-white shadow-[0_4px_18px_rgba(73,38,20,0.04)]">
 
           <div className="border-b border-[#eadfce] px-5 py-4">
 
             <h3 className="font-serif text-[21px] font-semibold text-[#4a1712]">
-              Successful Matches
+              Member Matches
             </h3>
 
             <p className="mt-0.5 text-[9px] text-[#9a806f]">
@@ -301,274 +497,423 @@ function MatchesPage() {
           </div>
 
 
-          {/* Desktop */}
-          <div className="hidden overflow-x-auto md:block">
+          {/* ===================================================== */}
+          {/* LOADING */}
+          {/* ===================================================== */}
 
-            <table className="w-full">
+          {loading && (
+            <div className="px-5 py-16 text-center">
 
-              <thead>
-                <tr className="border-b border-[#eadfce] bg-[#fffaf5]">
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-[#eadfce] border-t-[#8c1d18]" />
 
-                  <th className="px-5 py-3 text-left text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
-                    Members
-                  </th>
+              <p className="mt-3 text-[10px] text-[#9a806f]">
+                Loading matches...
+              </p>
 
-                  <th className="px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
-                    Locations
-                  </th>
-
-                  <th className="px-4 py-3 text-center text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
-                    Compatibility
-                  </th>
-
-                  <th className="px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
-                    Match Date
-                  </th>
-
-                  <th className="px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
-                    Status
-                  </th>
-
-                  <th className="px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
-                    Action
-                  </th>
-
-                </tr>
-              </thead>
+            </div>
+          )}
 
 
-              <tbody>
+          {/* ===================================================== */}
+          {/* DESKTOP */}
+          {/* ===================================================== */}
 
-                {filteredMatches.map((match) => (
+          {!loading && filteredMatches.length > 0 && (
+            <div className="hidden overflow-x-auto md:block">
 
-                  <tr
+              <table className="w-full">
+
+                <thead>
+
+                  <tr className="border-b border-[#eadfce] bg-[#fffaf5]">
+
+                    <th className="px-5 py-3 text-left text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
+                      Members
+                    </th>
+
+                    <th className="px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
+                      Locations
+                    </th>
+
+                    <th className="px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
+                      Details
+                    </th>
+
+                    <th className="px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
+                      Match Date
+                    </th>
+
+                    <th className="px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
+                      Status
+                    </th>
+
+                    <th className="px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
+                      Action
+                    </th>
+
+                  </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                  {filteredMatches.map((match) => {
+
+                    const sender = match.sender;
+                    const receiver = match.receiver;
+
+                    const senderProfile =
+                      sender?.matrimonial_profiles;
+
+                    const receiverProfile =
+                      receiver?.matrimonial_profiles;
+
+                    return (
+                      <tr
+                        key={match.id}
+                        className="border-b border-[#f0e7dc] last:border-0 hover:bg-[#fffaf5]"
+                      >
+
+                        {/* Members */}
+
+                        <td className="px-5 py-4">
+
+                          <div className="flex items-center gap-2">
+
+                            <ProfileAvatar
+                              person={sender}
+                              type="sender"
+                            />
+
+                            <div className="min-w-[110px]">
+
+                              <p className="text-[10px] font-semibold text-[#4f3425]">
+                                {sender?.full_name || "Unknown"}
+                              </p>
+
+                              <p className="text-[8px] text-[#9a806f]">
+                                {calculateAge(
+                                  senderProfile?.birth_date
+                                )}{" "}
+                                yrs •{" "}
+                                {senderProfile?.profession ||
+                                  "Profession N/A"}
+                              </p>
+
+                            </div>
+
+
+                            <span className="mx-1 text-[12px] text-[#d92c2c]">
+                              ♥
+                            </span>
+
+
+                            <ProfileAvatar
+                              person={receiver}
+                              type="receiver"
+                            />
+
+                            <div className="min-w-[110px]">
+
+                              <p className="text-[10px] font-semibold text-[#4f3425]">
+                                {receiver?.full_name || "Unknown"}
+                              </p>
+
+                              <p className="text-[8px] text-[#9a806f]">
+                                {calculateAge(
+                                  receiverProfile?.birth_date
+                                )}{" "}
+                                yrs •{" "}
+                                {receiverProfile?.profession ||
+                                  "Profession N/A"}
+                              </p>
+
+                            </div>
+
+                          </div>
+
+                        </td>
+
+
+                        {/* Locations */}
+
+                        <td className="px-4 py-4">
+
+                          <p className="text-[9px] text-[#806653]">
+                            📍{" "}
+                            {senderProfile?.state ||
+                              senderProfile?.address ||
+                              "N/A"}
+                          </p>
+
+                          <p className="mt-1 text-[9px] text-[#806653]">
+                            📍{" "}
+                            {receiverProfile?.state ||
+                              receiverProfile?.address ||
+                              "N/A"}
+                          </p>
+
+                        </td>
+
+
+                        {/* Details */}
+
+                        <td className="px-4 py-4">
+
+                          <p className="text-[9px] text-[#806653]">
+                            {senderProfile?.education ||
+                              "Education N/A"}
+                          </p>
+
+                          <p className="mt-1 text-[9px] text-[#806653]">
+                            {receiverProfile?.education ||
+                              "Education N/A"}
+                          </p>
+
+                        </td>
+
+
+                        {/* Match Date */}
+
+                        <td className="px-4 py-4 text-[10px] text-[#806653]">
+                          {formatDate(match.created_at)}
+                        </td>
+
+
+                        {/* Status */}
+
+                        <td className="px-4 py-4">
+
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-[8px] font-semibold ${getStatusClass(
+                              match.status
+                            )}`}
+                          >
+                            {getStatusLabel(match.status)}
+                          </span>
+
+                        </td>
+
+
+                        {/* Action */}
+
+                        <td className="px-4 py-4">
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedMatch(match)
+                            }
+                            className="rounded-md border border-[#eadfce] px-3 py-1.5 text-[9px] font-semibold text-[#8c1d18] transition hover:bg-[#fff5e8]"
+                          >
+                            View Match
+                          </button>
+
+                        </td>
+
+                      </tr>
+                    );
+                  })}
+
+                </tbody>
+
+              </table>
+
+            </div>
+          )}
+
+
+          {/* ===================================================== */}
+          {/* MOBILE */}
+          {/* ===================================================== */}
+
+          {!loading && filteredMatches.length > 0 && (
+            <div className="divide-y divide-[#eadfce] md:hidden">
+
+              {filteredMatches.map((match) => {
+
+                const sender = match.sender;
+                const receiver = match.receiver;
+
+                const senderProfile =
+                  sender?.matrimonial_profiles;
+
+                const receiverProfile =
+                  receiver?.matrimonial_profiles;
+
+                return (
+                  <div
                     key={match.id}
-                    className="border-b border-[#f0e7dc] last:border-0 hover:bg-[#fffaf5]"
+                    className="p-4"
                   >
 
                     {/* Members */}
-                    <td className="px-5 py-4">
 
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center gap-3">
 
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#8c1d18] font-serif text-[12px] font-semibold text-[#f5c45e]">
-                          {match.oneInitial}
-                        </div>
+                      <div className="max-w-[110px] text-center">
 
-                        <div>
+                        <div className="flex justify-center">
 
-                          <p className="text-[10px] font-semibold text-[#4f3425]">
-                            {match.personOne}
-                          </p>
-
-                          <p className="text-[8px] text-[#9a806f]">
-                            {match.personOneAge} yrs • {match.personOneProfession}
-                          </p>
+                          <ProfileAvatar
+                            person={sender}
+                            type="sender"
+                          />
 
                         </div>
 
-                        <span className="mx-1 text-[12px] text-[#d92c2c]">
+                        <p className="mt-1 truncate text-[9px] font-semibold text-[#4f3425]">
+                          {sender?.full_name || "Unknown"}
+                        </p>
+
+                        <p className="text-[8px] text-[#9a806f]">
+                          {calculateAge(
+                            senderProfile?.birth_date
+                          )}{" "}
+                          yrs
+                        </p>
+
+                      </div>
+
+
+                      <div className="text-center">
+
+                        <div className="text-[15px] text-[#d92c2c]">
                           ♥
-                        </span>
-
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f4e2c2] font-serif text-[12px] font-semibold text-[#8c1d18]">
-                          {match.twoInitial}
                         </div>
+
+                        <p
+                          className={`rounded-full px-2 py-1 text-[7px] font-semibold ${getStatusClass(
+                            match.status
+                          )}`}
+                        >
+                          {getStatusLabel(match.status)}
+                        </p>
+
+                      </div>
+
+
+                      <div className="max-w-[110px] text-center">
+
+                        <div className="flex justify-center">
+
+                          <ProfileAvatar
+                            person={receiver}
+                            type="receiver"
+                          />
+
+                        </div>
+
+                        <p className="mt-1 truncate text-[9px] font-semibold text-[#4f3425]">
+                          {receiver?.full_name || "Unknown"}
+                        </p>
+
+                        <p className="text-[8px] text-[#9a806f]">
+                          {calculateAge(
+                            receiverProfile?.birth_date
+                          )}{" "}
+                          yrs
+                        </p>
+
+                      </div>
+
+                    </div>
+
+
+                    {/* Information */}
+
+                    <div className="mt-4 rounded-lg bg-[#fffaf5] p-3">
+
+                      <div className="grid grid-cols-2 gap-3">
 
                         <div>
 
-                          <p className="text-[10px] font-semibold text-[#4f3425]">
-                            {match.personTwo}
+                          <p className="text-[8px] text-[#9a806f]">
+                            Location
                           </p>
 
+                          <p className="mt-0.5 text-[9px] text-[#806653]">
+                            📍{" "}
+                            {senderProfile?.state ||
+                              senderProfile?.address ||
+                              "N/A"}
+                          </p>
+
+                        </div>
+
+
+                        <div>
+
                           <p className="text-[8px] text-[#9a806f]">
-                            {match.personTwoAge} yrs • {match.personTwoProfession}
+                            Location
+                          </p>
+
+                          <p className="mt-0.5 text-[9px] text-[#806653]">
+                            📍{" "}
+                            {receiverProfile?.state ||
+                              receiverProfile?.address ||
+                              "N/A"}
+                          </p>
+
+                        </div>
+
+
+                        <div>
+
+                          <p className="text-[8px] text-[#9a806f]">
+                            Match Date
+                          </p>
+
+                          <p className="mt-0.5 text-[9px] text-[#806653]">
+                            {formatDate(match.created_at)}
+                          </p>
+
+                        </div>
+
+
+                        <div>
+
+                          <p className="text-[8px] text-[#9a806f]">
+                            Status
+                          </p>
+
+                          <p className="mt-0.5 text-[9px] font-semibold text-[#287b51]">
+                            {getStatusLabel(match.status)}
                           </p>
 
                         </div>
 
                       </div>
 
-                    </td>
-
-
-                    {/* Locations */}
-                    <td className="px-4 py-4">
-
-                      <p className="text-[9px] text-[#806653]">
-                        📍 {match.personOneLocation}
-                      </p>
-
-                      <p className="mt-1 text-[9px] text-[#806653]">
-                        📍 {match.personTwoLocation}
-                      </p>
-
-                    </td>
-
-
-                    {/* Compatibility */}
-                    <td className="px-4 py-4 text-center">
-
-                      <span className="rounded-full bg-[#e7f6ed] px-3 py-1 text-[9px] font-semibold text-[#287b51]">
-                        {match.compatibility}
-                      </span>
-
-                    </td>
-
-
-                    {/* Date */}
-                    <td className="px-4 py-4 text-[10px] text-[#806653]">
-                      {match.matchDate}
-                    </td>
-
-
-                    {/* Status */}
-                    <td className="px-4 py-4">
-
-                      <span
-                        className={`
-                          rounded-full px-2.5 py-1 text-[8px] font-semibold
-                          ${
-                            match.status === "New"
-                              ? "bg-[#fff1d8] text-[#b36b11]"
-                              : match.status === "Mutual"
-                                ? "bg-[#e7f6ed] text-[#287b51]"
-                                : "bg-[#f8e3e3] text-[#b63b3b]"
-                          }
-                        `}
-                      >
-                        {match.status}
-                      </span>
-
-                    </td>
-
-
-                    {/* Action */}
-                    <td className="px-4 py-4">
-
-                      <button
-                        type="button"
-                        onClick={() => setSelectedMatch(match)}
-                        className="rounded-md border border-[#eadfce] px-3 py-1.5 text-[9px] font-semibold text-[#8c1d18] transition hover:bg-[#fff5e8]"
-                      >
-                        View Match
-                      </button>
-
-                    </td>
-
-                  </tr>
-
-                ))}
-
-              </tbody>
-
-            </table>
-
-          </div>
-
-
-          {/* ================= MOBILE ================= */}
-          <div className="divide-y divide-[#eadfce] md:hidden">
-
-            {filteredMatches.map((match) => (
-
-              <div
-                key={match.id}
-                className="p-4"
-              >
-
-                <div className="flex items-center justify-center gap-3">
-
-                  <div className="text-center">
-
-                    <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-[#8c1d18] font-serif text-[13px] font-semibold text-[#f5c45e]">
-                      {match.oneInitial}
                     </div>
 
-                    <p className="mt-1 text-[9px] font-semibold text-[#4f3425]">
-                      {match.personOne}
-                    </p>
 
-                  </div>
+                    {/* View */}
 
-
-                  <div className="text-center">
-
-                    <div className="text-[15px] text-[#d92c2c]">
-                      ♥
-                    </div>
-
-                    <p className="text-[8px] text-[#287b51]">
-                      {match.compatibility}
-                    </p>
-
-                  </div>
-
-
-                  <div className="text-center">
-
-                    <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-[#f4e2c2] font-serif text-[13px] font-semibold text-[#8c1d18]">
-                      {match.twoInitial}
-                    </div>
-
-                    <p className="mt-1 text-[9px] font-semibold text-[#4f3425]">
-                      {match.personTwo}
-                    </p>
-
-                  </div>
-
-                </div>
-
-
-                <div className="mt-4 flex items-center justify-between">
-
-                  <div>
-
-                    <p className="text-[8px] text-[#9a806f]">
-                      Match Date
-                    </p>
-
-                    <p className="mt-0.5 text-[9px] text-[#806653]">
-                      {match.matchDate}
-                    </p>
-
-                  </div>
-
-                  <span
-                    className={`
-                      rounded-full px-2.5 py-1 text-[8px] font-semibold
-                      ${
-                        match.status === "New"
-                          ? "bg-[#fff1d8] text-[#b36b11]"
-                          : match.status === "Mutual"
-                            ? "bg-[#e7f6ed] text-[#287b51]"
-                            : "bg-[#f8e3e3] text-[#b63b3b]"
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedMatch(match)
                       }
-                    `}
-                  >
-                    {match.status}
-                  </span>
+                      className="mt-3 w-full rounded-md border border-[#eadfce] py-2 text-[9px] font-semibold text-[#8c1d18] hover:bg-[#fff5e8]"
+                    >
+                      View Match
+                    </button>
 
-                </div>
+                  </div>
+                );
+              })}
 
-
-                <button
-                  type="button"
-                  onClick={() => setSelectedMatch(match)}
-                  className="mt-3 w-full rounded-md border border-[#eadfce] py-2 text-[9px] font-semibold text-[#8c1d18]"
-                >
-                  View Match
-                </button>
-
-              </div>
-
-            ))}
-
-          </div>
+            </div>
+          )}
 
 
-          {/* Empty */}
-          {filteredMatches.length === 0 && (
+          {/* ===================================================== */}
+          {/* EMPTY */}
+          {/* ===================================================== */}
+
+          {!loading && filteredMatches.length === 0 && (
             <div className="px-5 py-16 text-center">
 
               <div className="text-3xl">
@@ -580,7 +925,9 @@ function MatchesPage() {
               </h3>
 
               <p className="mt-1 text-[10px] text-[#9a806f]">
-                Try changing your search or match status.
+                {matches.length === 0
+                  ? "There are no matches available yet."
+                  : "Try changing your search or match status."}
               </p>
 
             </div>
@@ -591,14 +938,17 @@ function MatchesPage() {
       </main>
 
 
-      {/* ================= MODAL ================= */}
-      {selectedMatch && (
+      {/* ===================================================== */}
+      {/* MODAL */}
+      {/* ===================================================== */}
 
+      {selectedMatch && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
 
-          <div className="max-h-[90vh] w-full max-w-[650px] overflow-y-auto rounded-2xl bg-white shadow-2xl">
+          <div className="max-h-[90vh] w-full max-w-[700px] overflow-y-auto rounded-2xl bg-white shadow-2xl">
 
-            {/* Header */}
+            {/* Modal Header */}
+
             <div className="flex items-center justify-between border-b border-[#eadfce] px-5 py-4">
 
               <div>
@@ -608,7 +958,7 @@ function MatchesPage() {
                 </p>
 
                 <h3 className="mt-1 font-serif text-[22px] font-semibold text-[#4a1712]">
-                  Successful Connection
+                  Member Connection
                 </h3>
 
               </div>
@@ -624,65 +974,114 @@ function MatchesPage() {
             </div>
 
 
-            {/* Body */}
+            {/* Modal Body */}
+
             <div className="p-5">
 
-              {/* Members */}
               <div className="flex flex-col items-center gap-4 sm:flex-row">
 
-                {/* Person One */}
+                {/* Sender */}
+
                 <div className="w-full rounded-xl bg-[#fffaf5] p-5 text-center">
 
-                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#8c1d18] font-serif text-[21px] font-semibold text-[#f5c45e]">
-                    {selectedMatch.oneInitial}
+                  <div className="flex justify-center">
+
+                    <ProfileAvatar
+                      person={selectedMatch.sender}
+                      type="sender"
+                      large
+                    />
+
                   </div>
 
                   <h4 className="mt-3 font-serif text-[18px] font-semibold text-[#4a1712]">
-                    {selectedMatch.personOne}
+                    {selectedMatch.sender?.full_name ||
+                      "Unknown"}
                   </h4>
 
                   <p className="mt-1 text-[9px] text-[#806653]">
-                    {selectedMatch.personOneAge} years
+                    {calculateAge(
+                      selectedMatch.sender?.matrimonial_profiles
+                        ?.birth_date
+                    )}{" "}
+                    years
                   </p>
 
                   <p className="mt-1 text-[9px] text-[#806653]">
-                    {selectedMatch.personOneProfession}
+                    {selectedMatch.sender?.matrimonial_profiles
+                      ?.profession || "Profession N/A"}
                   </p>
 
                   <p className="mt-1 text-[9px] text-[#806653]">
-                    📍 {selectedMatch.personOneLocation}
+                    📍{" "}
+                    {selectedMatch.sender?.matrimonial_profiles
+                      ?.state ||
+                      selectedMatch.sender?.matrimonial_profiles
+                        ?.address ||
+                      "Location N/A"}
+                  </p>
+
+                  <p className="mt-1 text-[9px] text-[#806653]">
+                    🎓{" "}
+                    {selectedMatch.sender?.matrimonial_profiles
+                      ?.education || "Education N/A"}
                   </p>
 
                 </div>
 
 
                 {/* Heart */}
+
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fff0f0] text-[18px] text-[#d92c2c]">
                   ♥
                 </div>
 
 
-                {/* Person Two */}
+                {/* Receiver */}
+
                 <div className="w-full rounded-xl bg-[#fffaf5] p-5 text-center">
 
-                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#f4e2c2] font-serif text-[21px] font-semibold text-[#8c1d18]">
-                    {selectedMatch.twoInitial}
+                  <div className="flex justify-center">
+
+                    <ProfileAvatar
+                      person={selectedMatch.receiver}
+                      type="receiver"
+                      large
+                    />
+
                   </div>
 
                   <h4 className="mt-3 font-serif text-[18px] font-semibold text-[#4a1712]">
-                    {selectedMatch.personTwo}
+                    {selectedMatch.receiver?.full_name ||
+                      "Unknown"}
                   </h4>
 
                   <p className="mt-1 text-[9px] text-[#806653]">
-                    {selectedMatch.personTwoAge} years
+                    {calculateAge(
+                      selectedMatch.receiver?.matrimonial_profiles
+                        ?.birth_date
+                    )}{" "}
+                    years
                   </p>
 
                   <p className="mt-1 text-[9px] text-[#806653]">
-                    {selectedMatch.personTwoProfession}
+                    {selectedMatch.receiver?.matrimonial_profiles
+                      ?.profession || "Profession N/A"}
                   </p>
 
                   <p className="mt-1 text-[9px] text-[#806653]">
-                    📍 {selectedMatch.personTwoLocation}
+                    📍{" "}
+                    {selectedMatch.receiver?.matrimonial_profiles
+                      ?.state ||
+                      selectedMatch.receiver?.matrimonial_profiles
+                        ?.address ||
+                      "Location N/A"}
+                  </p>
+
+                  <p className="mt-1 text-[9px] text-[#806653]">
+                    🎓{" "}
+                    {selectedMatch.receiver?.matrimonial_profiles
+                      ?.education || "Education N/A"}
                   </p>
 
                 </div>
@@ -690,63 +1089,67 @@ function MatchesPage() {
               </div>
 
 
-              {/* Compatibility */}
-              <div className="mt-5 rounded-xl border border-[#eadfce] bg-[#fffaf5] p-5 text-center">
+              {/* Status + Date */}
 
-                <p className="text-[8px] uppercase tracking-[2px] text-[#a67c35]">
-                  Compatibility Score
-                </p>
+              <div className="mt-5 grid grid-cols-2 gap-3">
 
-                <p className="mt-2 font-serif text-[36px] font-semibold text-[#8c1d18]">
-                  {selectedMatch.compatibility}
-                </p>
+                <div className="rounded-lg border border-[#eadfce] p-4">
 
-                <div className="mx-auto mt-2 h-2 max-w-[300px] overflow-hidden rounded-full bg-[#eadfce]">
-
-                  <div
-                    className="h-full rounded-full bg-[#8c1d18]"
-                    style={{
-                      width: selectedMatch.compatibility,
-                    }}
-                  />
-
-                </div>
-
-                <p className="mt-2 text-[9px] text-[#806653]">
-                  Based on profile preferences and mutual interests.
-                </p>
-
-              </div>
-
-
-              {/* Details */}
-              <div className="mt-4 grid grid-cols-2 gap-3">
-
-                <div className="rounded-lg border border-[#eadfce] p-3">
                   <p className="text-[8px] uppercase tracking-[1px] text-[#a67c35]">
                     Match Date
                   </p>
 
                   <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
-                    {selectedMatch.matchDate}
+                    {formatDate(
+                      selectedMatch.created_at
+                    )}
                   </p>
+
                 </div>
 
 
-                <div className="rounded-lg border border-[#eadfce] p-3">
+                <div className="rounded-lg border border-[#eadfce] p-4">
+
                   <p className="text-[8px] uppercase tracking-[1px] text-[#a67c35]">
                     Status
                   </p>
 
-                  <p className="mt-1 text-[10px] font-medium text-[#287b51]">
-                    {selectedMatch.status}
+                  <p className="mt-1">
+
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-[8px] font-semibold ${getStatusClass(
+                        selectedMatch.status
+                      )}`}
+                    >
+                      {getStatusLabel(
+                        selectedMatch.status
+                      )}
+                    </span>
+
                   </p>
+
                 </div>
 
               </div>
 
 
+              {/* Match ID */}
+
+              <div className="mt-3 rounded-lg border border-[#eadfce] p-4">
+
+                <p className="text-[8px] uppercase tracking-[1px] text-[#a67c35]">
+                  Match ID
+                </p>
+
+                <p className="mt-1 break-all text-[9px] text-[#806653]">
+                  {selectedMatch.id}
+                </p>
+
+              </div>
+
+
               {/* Close */}
+
               <button
                 type="button"
                 onClick={() => setSelectedMatch(null)}
@@ -760,7 +1163,6 @@ function MatchesPage() {
           </div>
 
         </div>
-
       )}
 
     </div>

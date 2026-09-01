@@ -54,7 +54,7 @@ function RegisterPage() {
 
   return (
     <div className="min-h-screen w-full bg-[#fff0b8] text-[#333]">
-
+ 
       {/* =====================================================
           NAVBAR
       ====================================================== */}
@@ -142,7 +142,32 @@ function RegisterPage() {
 
       </nav>
 
-
+{/* BACK BUTTON */}
+<div className="w-full max-w-[1100px] mx-auto px-5 pt-4">
+  <button
+    type="button"
+    onClick={() => window.history.back()}
+    className="
+      inline-flex
+      items-center
+      gap-1.5
+      px-3
+      py-1.5
+      rounded-[6px]
+      border
+      border-[#d7a744]
+      bg-white
+      text-[#d9272e]
+      text-[11px]
+      font-medium
+      hover:bg-[#d9272e]
+      hover:text-white
+      transition
+    "
+  >
+    ← Back
+  </button>
+</div>
       {/* =====================================================
           PAGE HEADER
       ====================================================== */}

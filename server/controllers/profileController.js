@@ -78,6 +78,21 @@ export const getAllProfiles = async (req, res) => {
           partner_religion,
           partner_location
         ),
+        memberships (
+  plan_name,
+  status,
+  start_date,
+  end_date
+),
+payments (
+  plan_name,
+  amount,
+  payment_status,
+  payment_method,
+  transaction_id,
+  paid_at,
+  expires_at
+),
           profile_documents (
   aadhar_card,
   photo_1,
