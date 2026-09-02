@@ -4,6 +4,8 @@ function AdminDashboard() {
   const [profiles, setProfiles] = useState([]);
 const [loading, setLoading] = useState(true);
 const [error, setError] = useState("");
+
+
 useEffect(() => {
   fetchDashboardData();
 }, []);

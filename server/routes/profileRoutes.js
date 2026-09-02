@@ -12,6 +12,13 @@ import {
   updateProfileStatus,
   updateMyMatrimonialProfile,
   updateMyFamilyDetails,
+   hideProfile,
+   unhideProfile,
+   getHiddenProfiles,
+    reportProfile,
+    getMyReports,
+    getAllProfileReports,
+
 } from "../controllers/profileController.js";
 
 import authMiddleware from "../middleware/authMiddleware.js";
@@ -52,12 +59,7 @@ router.get(
 // GET SINGLE PUBLIC PROFILE
 // ========================================
 
-router.get(
-  "/:userId",
-  authMiddleware,
-  membershipMiddleware,
-  getPublicProfile
-);
+
 
 
 // ========================================
@@ -132,6 +134,26 @@ router.put(
   authMiddleware,
   updateMyFamilyDetails
 );
+router.post(
+  "/hide/:hiddenUserId",
+  authMiddleware,
+  hideProfile
+);
 
+router.delete(
+  "/hide/:hiddenUserId",
+  authMiddleware,
+  unhideProfile
+);
+router.get("/hidden", authMiddleware, getHiddenProfiles);
 
+router.post("/report/:reportedUserId", authMiddleware, reportProfile);
+router.get("/reports", authMiddleware, getMyReports);
+router.get(
+  "/reports/admin",
+  authMiddleware,
+  adminMiddleware,
+  getAllProfileReports
+);
+router.get("/:userId", authMiddleware, membershipMiddleware, getPublicProfile);
 export default router;

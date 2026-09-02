@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import API_BASE_URL from "../../api/api";
 import frontendSupabase from "../../api/frontendSupabase";
-
+import EmojiPicker from "emoji-picker-react";
 function ChatPage() {
   
   const [conversations, setConversations] = useState([]);
@@ -16,10 +16,12 @@ function ChatPage() {
     useState(false);
 
   const [sending, setSending] = useState(false);
-
+const [sendingConversations, setSendingConversations] = useState({});
   const [selectedImage, setSelectedImage] =
     useState(null);
-
+const [onlineUsers, setOnlineUsers] = useState({});
+const [typingUsers, setTypingUsers] = useState({});
+const [seenMessages, setSeenMessages] = useState({});
   const [imagePreview, setImagePreview] =
     useState(null);
 
@@ -27,7 +29,13 @@ function ChatPage() {
 
   const [showMobileChat, setShowMobileChat] =
     useState(false);
-
+const [messageMenu, setMessageMenu] = useState(null);
+const [showChatMenu, setShowChatMenu] = useState(false);
+const [showReportModal, setShowReportModal] = useState(false);
+const [reportReason, setReportReason] = useState("");
+const [reportExplanation, setReportExplanation] = useState("");
+const [reporting, setReporting] = useState(false);
+const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -205,8 +213,30 @@ function ChatPage() {
         );
       }
 
+
       setMessages(data.messages || []);
 
+console.log("All messages:", data.messages);
+console.log("Current user:", currentUser?.id);
+
+const unreadMessages = (data.messages || []).filter(
+  (message) =>
+    message.receiver_id === currentUser?.id &&
+    !message.is_read
+);
+
+console.log("Unread messages:", unreadMessages);
+unreadMessages.forEach(async (message) => {
+  await fetch(
+    `${API_BASE_URL}/api/chat/messages/${message.id}/read`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+});
       scrollToBottom();
     } catch (error) {
       console.error(
@@ -226,6 +256,95 @@ function ChatPage() {
   // ======================================================
   // INITIAL LOAD
   // ======================================================
+// ======================================================
+// ONLINE / OFFLINE STATUS
+// ======================================================
+
+useEffect(() => {
+  if (!currentUser?.id) return;
+
+  const channel = frontendSupabase.channel("chat-presence", {
+    config: {
+      presence: {
+        key: currentUser.id,
+      },
+    },
+  });
+
+  const updateOnlineStatus = () => {
+    const state = channel.presenceState();
+
+    const online = {};
+
+    Object.values(state).forEach((users) => {
+      users.forEach((user) => {
+        if (user.user_id) {
+          online[user.user_id] = true;
+        }
+      });
+    });
+
+    setOnlineUsers(online);
+  };
+
+  channel
+    .on("presence", { event: "sync" }, updateOnlineStatus)
+    .on("presence", { event: "join" }, updateOnlineStatus)
+    .on("presence", { event: "leave" }, updateOnlineStatus)
+    .subscribe(async (status) => {
+      if (status === "SUBSCRIBED") {
+        await channel.track({
+          user_id: currentUser.id,
+          online_at: new Date().toISOString(),
+        });
+      }
+    });
+
+  return () => {
+    frontendSupabase.removeChannel(channel);
+  };
+}, [currentUser?.id]);
+
+// ======================================================
+// TYPING INDICATOR
+// ======================================================
+
+useEffect(() => {
+  if (!selectedConversation?.id || !currentUser?.id) return;
+
+  const channel = frontendSupabase.channel(
+    `typing-${selectedConversation.id}`
+  );
+
+  channel
+    .on(
+      "broadcast",
+      { event: "typing" },
+      ({ payload }) => {
+        if (payload.user_id === currentUser.id) return;
+
+        setTypingUsers((previous) => ({
+          ...previous,
+          [payload.user_id]: payload.typing,
+        }));
+
+        if (payload.typing) {
+          setTimeout(() => {
+            setTypingUsers((previous) => ({
+              ...previous,
+              [payload.user_id]: false,
+            }));
+          }, 2000);
+        }
+      }
+    )
+    .subscribe();
+
+  return () => {
+    frontendSupabase.removeChannel(channel);
+  };
+}, [selectedConversation?.id, currentUser?.id]);
+
 
   useEffect(() => {
     fetchConversations();
@@ -319,6 +438,79 @@ function ChatPage() {
             );
           }
         )
+        .on(
+  "postgres_changes",
+  {
+    event: "UPDATE",
+    schema: "public",
+    table: "messages",
+    filter: `conversation_id=eq.${selectedConversation.id}`,
+  },
+  (payload) => {
+    console.log(
+      "Message updated:",
+      payload.new
+    );
+
+    // Update message inside opened chat
+    setMessages((previousMessages) =>
+      previousMessages.map((message) =>
+        message.id === payload.new.id
+          ? {
+              ...message,
+              ...payload.new,
+            }
+          : message
+      )
+    );
+
+    // Update LEFT conversation preview
+    setConversations((previousConversations) =>
+      previousConversations
+        .map((conversation) => {
+          if (
+            conversation.id !==
+            selectedConversation.id
+          ) {
+            return conversation;
+          }
+
+          // Find whether this updated message
+          // is the latest message
+          const currentLastMessage =
+            conversation.lastMessage;
+
+          if (
+            !currentLastMessage ||
+            currentLastMessage.id ===
+              payload.new.id ||
+            new Date(payload.new.created_at) >=
+              new Date(
+                currentLastMessage.created_at
+              )
+          ) {
+            return {
+              ...conversation,
+              lastMessage: payload.new,
+            };
+          }
+
+          return conversation;
+        })
+        .sort((a, b) => {
+          const dateA = new Date(
+            a.lastMessage?.created_at || 0
+          );
+
+          const dateB = new Date(
+            b.lastMessage?.created_at || 0
+          );
+
+          return dateB - dateA;
+        })
+    );
+  }
+)
         .subscribe((status) => {
           console.log(
             `Realtime status for conversation ${selectedConversation.id}:`,
@@ -401,6 +593,208 @@ function ChatPage() {
     }
   };
 
+// ======================================================
+// DELETE MESSAGE FOR ME
+// ======================================================
+
+const handleDeleteForMe = async (messageId) => {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/chat/messages/${messageId}/me`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(
+        data.message || "Unable to delete message"
+      );
+    }
+
+    // Remove message from my current chat immediately
+    setMessages((previousMessages) =>
+      previousMessages.filter(
+        (message) => message.id !== messageId
+      )
+    );
+
+    // Close menu
+    setMessageMenu(null);
+
+  } catch (error) {
+    console.error(
+      "Delete for me error:",
+      error
+    );
+
+    alert(
+      error.message ||
+        "Unable to delete message"
+    );
+  }
+};
+
+
+// ======================================================
+// DELETE MESSAGE FOR EVERYONE
+// ======================================================
+
+const handleDeleteForEveryone = async (messageId) => {
+  try {
+    const confirmDelete = window.confirm(
+      "Delete this message for everyone?"
+    );
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/chat/messages/${messageId}/everyone`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(
+        data.message ||
+          "Unable to delete message for everyone"
+      );
+    }
+
+    // Remove message from current chat immediately
+    setMessages((previousMessages) =>
+      previousMessages.filter(
+        (message) => message.id !== messageId
+      )
+    );
+
+    // Close menu
+    setMessageMenu(null);
+
+  } catch (error) {
+    console.error(
+      "Delete for everyone error:",
+      error
+    );
+
+    alert(
+      error.message ||
+        "Unable to delete message for everyone"
+    );
+  }
+};
+
+const handleHideProfile = async () => {
+  try {
+    const hiddenUserId = selectedConversation?.otherUser?.id;
+
+    if (!hiddenUserId) {
+      alert("Profile not found");
+      return;
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/profiles/hide/${hiddenUserId}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(
+        data.message || "Unable to hide profile"
+      );
+    }
+
+    // Menu close
+    setShowChatMenu(false);
+
+    // Current chat close
+    setSelectedConversation(null);
+
+    // Chat screen se bahar
+    setShowMobileChat(false);
+
+    // Chat list se profile immediately remove
+    setConversations((previousConversations) =>
+      previousConversations.filter(
+        (conversation) =>
+          conversation.otherUser?.id !== hiddenUserId
+      )
+    );
+
+  } catch (error) {
+    console.error("Hide profile error:", error);
+    alert(error.message || "Unable to hide profile");
+  }
+};
+const handleReportProfile = async () => {
+  try {
+    const reportedUserId = selectedConversation?.otherUser?.id;
+
+    if (!reportedUserId) {
+      alert("Profile not found");
+      return;
+    }
+
+    if (!reportReason) {
+      alert("Please select a reason");
+      return;
+    }
+
+    setReporting(true);
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/profiles/report/${reportedUserId}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          reason: reportReason,
+          explanation: reportExplanation,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "Unable to submit report");
+    }
+
+    alert("Profile reported successfully");
+
+    setReportReason("");
+    setReportExplanation("");
+    setShowReportModal(false);
+  } catch (error) {
+    console.error("Report profile error:", error);
+    alert(error.message || "Unable to submit report");
+  } finally {
+    setReporting(false);
+  }
+};
   // ======================================================
   // SEND MESSAGE
   // ======================================================
@@ -413,8 +807,14 @@ const handleSendMessage = async () => {
   }
 
   try {
-    setSending(true);
-    setError("");
+  setSending(true);
+  setError("");
+
+  // Immediately show "Sending..." in conversation list
+  setSendingConversations((previous) => ({
+    ...previous,
+    [selectedConversation.id]: true,
+  }));
 
     const formData = new FormData();
 
@@ -472,7 +872,7 @@ const handleSendMessage = async () => {
 
     // Clear text
     setMessageText("");
-
+setShowEmojiPicker(false);
     // Clear selected image
     setSelectedImage(null);
 
@@ -492,14 +892,48 @@ const handleSendMessage = async () => {
     scrollToBottom();
 
     // Refresh conversation preview
-    fetchConversations();
+    // Update conversation preview immediately
+setConversations((previousConversations) =>
+  previousConversations
+    .map((conversation) => {
+      if (conversation.id !== selectedConversation.id) {
+        return conversation;
+      }
+
+      return {
+        ...conversation,
+        lastMessage: data.data,
+        unreadCount: 0,
+      };
+    })
+    .sort((a, b) => {
+      const dateA = new Date(
+        a.lastMessage?.created_at || 0
+      );
+
+      const dateB = new Date(
+        b.lastMessage?.created_at || 0
+      );
+
+      return dateB - dateA;
+    })
+);
+
+// Sending completed
+setSendingConversations((previous) => ({
+  ...previous,
+  [selectedConversation.id]: false,
+}));
 
   } catch (error) {
     console.error(
       "Send message error:",
       error
     );
-
+setSendingConversations((previous) => ({
+    ...previous,
+    [selectedConversation?.id]: false,
+  }));
     alert(
       error.message ||
         "Unable to send message"
@@ -631,26 +1065,61 @@ const handleSendMessage = async () => {
             <div className="overflow-y-auto">
               {conversations.map(
                 (conversation) => {
-                  const lastMessage =
-                    conversation.lastMessage;
+                 const lastMessage =
+  conversation.lastMessage;
 
-                  const preview =
-                    lastMessage?.image_url
-                      ? lastMessage.message
-                        ? `📷 ${lastMessage.message}`
-                        : "📷 Photo"
-                      : lastMessage?.message ||
-                        "Conversation started";
+const isLastMessageMine =
+  lastMessage?.sender_id === currentUser?.id;
+
+const isSending =
+  sendingConversations[conversation.id];
+
+let preview = "Conversation started";
+
+if (isSending) {
+  preview = "Sending...";
+} else if (lastMessage) {
+  // My last message
+  if (isLastMessageMine) {
+    if (lastMessage.is_read) {
+      preview = "Seen";
+    } else {
+      preview = "Sent";
+    }
+  }
+
+  // Other person's last message
+  else {
+    if (lastMessage.image_url) {
+      preview = lastMessage.message
+        ? `📷 ${lastMessage.message}`
+        : "📷 Photo";
+    } else {
+      preview =
+        lastMessage.message ||
+        "Conversation started";
+    }
+  }
+}
 
                   return (
                     <button
                       key={conversation.id}
                       type="button"
-                      onClick={() =>
-                        handleConversationClick(
-                          conversation
-                        )
-                      }
+                      onClick={() => {
+  handleConversationClick(conversation);
+
+  setConversations((previousConversations) =>
+    previousConversations.map((item) =>
+      item.id === conversation.id
+        ? {
+            ...item,
+            unreadCount: 0,
+          }
+        : item
+    )
+  );
+}}
                       className={`w-full border-b border-[#f0e2d6] p-4 text-left transition hover:bg-[#fff7ef] ${
                         selectedConversation?.id ===
                         conversation.id
@@ -709,9 +1178,27 @@ const handleSendMessage = async () => {
                             )}
                           </div>
 
-                          <div className="mt-1 truncate text-sm text-gray-500">
-                            {preview}
-                          </div>
+                          <div className="mt-1 flex items-center gap-2">
+  <div
+    className={`min-w-0 flex-1 truncate text-sm ${
+      conversation.unreadCount > 0
+        ? "font-semibold text-[#563927]"
+        : "text-gray-500"
+    }`}
+  >
+    {conversation.unreadCount > 0
+      ? `${conversation.unreadCount} new ${
+          conversation.unreadCount === 1
+            ? "message"
+            : "messages"
+        }`
+      : preview}
+  </div>
+
+  {conversation.unreadCount > 0 && (
+    <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-blue-500" />
+  )}
+</div>
 
                         </div>
                       </div>
@@ -806,10 +1293,65 @@ const handleSendMessage = async () => {
                     </h2>
 
                     <p className="text-xs text-gray-500">
-                      Connected member
+                     {selectedConversation?.otherUser?.id &&
+  onlineUsers[selectedConversation.otherUser.id] ? (
+    <span className="text-[11px] text-green-500">
+      ● Online
+    </span>
+  ) : (
+    <span className="text-[11px] text-gray-400">
+      ● Offline
+    </span>
+  )}
+  {selectedConversation?.otherUser?.id &&
+  typingUsers[selectedConversation.otherUser.id] && (
+    <span className="text-[11px] text-[#8b5e3c]">
+      Typing...
+    </span>
+  )}
                     </p>
                   </div>
+<div className="relative">
+  <button
+    type="button"
+    onClick={() =>
+      setShowChatMenu((previous) => !previous)
+    }
+    className="flex h-9 w-9 items-center justify-center rounded-full text-xl text-[#563927] hover:bg-[#fff5ed]"
+    title="More"
+  >
+    ⋮
+  </button>
 
+  {showChatMenu && (
+    <div className="absolute right-0 top-11 z-50 w-52 rounded-xl border border-[#ead8c8] bg-white py-2 shadow-lg">
+
+      
+
+      <button
+  type="button"
+  onClick={handleHideProfile}
+  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-[#563927] hover:bg-[#fff5ed]"
+>
+  👁️ Hide Profile
+</button>
+
+     
+
+      <button
+        type="button"
+        onClick={() => {
+          setShowChatMenu(false);
+          setShowReportModal(true);
+        }}
+        className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50"
+      >
+        🚩 Report Profile
+      </button>
+
+    </div>
+  )}
+</div>
                 </div>
               </div>
 
@@ -882,63 +1424,163 @@ const handleSendMessage = async () => {
                               </div>
                             )}
 
-                            {/* MESSAGE */}
+                           {/* MESSAGE */}
 
-                            <div
-                              className={`flex ${
-                                isMine
-                                  ? "justify-end"
-                                  : "justify-start"
-                              }`}
-                            >
+<div
+  className={`flex items-end gap-2 ${
+    isMine
+      ? "justify-end"
+      : "justify-start"
+  }`}
+>
 
-                              <div
-                                className={`max-w-[80%] rounded-2xl px-3 py-2 shadow-sm sm:max-w-[65%] ${
-                                  isMine
-                                    ? "rounded-br-md bg-[#8b5e3c] text-white"
-                                    : "rounded-bl-md border border-[#ead8c8] bg-white text-[#3c2415]"
-                                }`}
-                              >
+  {/* OTHER USER PROFILE PHOTO */}
 
-                                {/* IMAGE */}
+  {!isMine && (
+    <>
+      {selectedConversation?.otherUser?.profile_photo ? (
+        <img
+          src={
+            selectedConversation.otherUser.profile_photo
+          }
+          alt={
+            selectedConversation.otherUser.full_name
+          }
+          className="h-7 w-7 shrink-0 rounded-full object-cover"
+        />
+      ) : (
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#ead8c8] text-[10px] font-semibold text-[#8b5e3c]">
+          {selectedConversation?.otherUser?.full_name
+            ?.charAt(0)
+            ?.toUpperCase()}
+        </div>
+      )}
+    </>
+  )}
 
-                                {msg.image_url && (
-                                  <img
-                                    src={
-                                      msg.image_url
-                                    }
-                                    alt="Shared"
-                                    className="mb-1 max-h-[320px] w-auto max-w-full rounded-xl object-cover"
-                                  />
-                                )}
+  {/* MESSAGE + MENU */}
 
-                                {/* TEXT */}
+  <div className="group relative flex items-start gap-1">
 
-                                {msg.message && (
-                                  <p className="whitespace-pre-wrap break-words text-sm leading-5">
-                                    {
-                                      msg.message
-                                    }
-                                  </p>
-                                )}
+    {/* 3 DOT MENU */}
 
-                                {/* TIME */}
+    <button
+      type="button"
+      onClick={(event) => {
+        event.stopPropagation();
 
-                                <div
-                                  className={`mt-1 text-right text-[10px] ${
-                                    isMine
-                                      ? "text-white/70"
-                                      : "text-gray-400"
-                                  }`}
-                                >
-                                  {formatTime(
-                                    msg.created_at
-                                  )}
-                                </div>
+        setMessageMenu(
+          messageMenu === msg.id
+            ? null
+            : msg.id
+        );
+      }}
+      className="mt-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-gray-400 opacity-0 transition group-hover:opacity-100 hover:bg-gray-100 hover:text-gray-600"
+      title="Message options"
+    >
+      ⋯
+    </button>
 
-                              </div>
-                            </div>
+    {/* MESSAGE BUBBLE */}
+
+    <div
+      className={`max-w-[80%] rounded-2xl px-3 py-2 shadow-sm sm:max-w-[65%] ${
+        isMine
+          ? "rounded-br-md bg-[#8b5e3c] text-white"
+          : "rounded-bl-md border border-[#ead8c8] bg-white text-[#3c2415]"
+      }`}
+    >
+
+      {/* IMAGE */}
+
+      {msg.image_url && (
+        <img
+          src={msg.image_url}
+          alt="Shared"
+          className="mb-1 max-h-[320px] w-auto max-w-full rounded-xl object-cover"
+        />
+      )}
+
+      {/* TEXT */}
+
+      {msg.message && (
+        <p className="whitespace-pre-wrap break-words text-sm leading-5">
+          {msg.message}
+        </p>
+      )}
+
+      {/* TIME + SENT / SEEN */}
+
+      <div
+        className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${
+          isMine
+            ? "text-white/70"
+            : "text-gray-400"
+        }`}
+      >
+        <span>
+          {formatTime(msg.created_at)}
+        </span>
+
+        {isMine && (
+          <span
+            className={
+              msg.is_read
+                ? "font-medium"
+                : ""
+            }
+          >
+            {msg.is_read ? "✓✓" : "✓"}
+          </span>
+        )}
+      </div>
+
+    </div>
+
+    {/* MESSAGE OPTIONS MENU */}
+
+    {messageMenu === msg.id && (
+      <div
+        className={`absolute top-0 z-[100] w-44 rounded-lg border border-[#ead8c8] bg-white py-1 shadow-lg ${
+          isMine
+            ? "right-full mr-2"
+            : "left-full ml-2"
+        }`}
+        onClick={(event) =>
+          event.stopPropagation()
+        }
+      >
+
+        <button
+          type="button"
+          onClick={() =>
+            handleDeleteForMe(msg.id)
+          }
+          className="block w-full px-4 py-2.5 text-left text-xs text-[#563927] hover:bg-[#fff7ef]"
+        >
+          🗑️ Delete for me
+        </button>
+
+        {isMine && (
+          <button
+            type="button"
+            onClick={() =>
+              handleDeleteForEveryone(msg.id)
+            }
+            className="block w-full px-4 py-2.5 text-left text-xs text-red-500 hover:bg-red-50"
+          >
+            🗑️ Delete for everyone
+          </button>
+        )}
+
+      </div>
+    )}
+
+  </div>
+
+</div>
                           </div>
+
                         );
                       }
                     )}
@@ -987,7 +1629,7 @@ const handleSendMessage = async () => {
                   MESSAGE INPUT
               ================================================= */}
 
-              <div className="border-t border-[#ead8c8] bg-white p-3 sm:p-4">
+             <div className="relative border-t border-[#ead8c8] bg-white p-3 sm:p-4">
 
                 <div className="flex items-end gap-2">
 
@@ -1004,7 +1646,25 @@ const handleSendMessage = async () => {
                   >
                     📷
                   </button>
-
+{/* EMOJI BUTTON */}
+<button
+  type="button"
+  onClick={() => setShowEmojiPicker((previous) => !previous)}
+  disabled={sending}
+  title="Add emoji"
+  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#d8c2b2] text-xl transition hover:bg-[#fff5ed] disabled:opacity-50"
+>
+  😊
+</button>
+{showEmojiPicker && (
+  <div className="absolute bottom-16 left-3 z-50">
+    <EmojiPicker
+      onEmojiClick={(emojiObject) => {
+        setMessageText((previous) => previous + emojiObject.emoji);
+      }}
+    />
+  </div>
+)}
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -1018,20 +1678,33 @@ const handleSendMessage = async () => {
                   {/* TEXT */}
 
                   <textarea
-                    value={messageText}
-                    onChange={(event) =>
-                      setMessageText(
-                        event.target.value
-                      )
-                    }
-                    onKeyDown={
-                      handleKeyDown
-                    }
-                    rows={1}
-                    placeholder="Type a message..."
-                    disabled={sending}
-                    className="max-h-28 min-h-[44px] flex-1 resize-none rounded-2xl border border-[#d8c2b2] px-4 py-3 text-sm outline-none focus:border-[#8b5e3c] disabled:bg-gray-50"
-                  />
+  value={messageText}
+  onChange={(event) => {
+    const value = event.target.value;
+
+    setMessageText(value);
+
+    if (!selectedConversation?.id) return;
+
+    const channel = frontendSupabase.channel(
+      `typing-${selectedConversation.id}`
+    );
+
+    channel.send({
+      type: "broadcast",
+      event: "typing",
+      payload: {
+        user_id: currentUser.id,
+        typing: value.length > 0,
+      },
+    });
+  }}
+  onKeyDown={handleKeyDown}
+  rows={1}
+  placeholder="Type a message..."
+  disabled={sending}
+  className="max-h-28 min-h-[44px] flex-1 resize-none rounded-2xl border border-[#d8c2b2] px-4 py-3 text-sm outline-none focus:border-[#8b5e3c] disabled:bg-gray-50"
+/>
 
                   {/* SEND */}
 
@@ -1064,6 +1737,79 @@ const handleSendMessage = async () => {
           )}
         </section>
       </main>
+      {showReportModal && (
+  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4">
+    <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl">
+
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-[#563927]">
+          🚩 Report Profile
+        </h2>
+
+        <button
+          onClick={() => {
+            setShowReportModal(false);
+            setReportReason("");
+            setReportExplanation("");
+          }}
+          className="text-xl text-gray-500"
+        >
+          ✕
+        </button>
+      </div>
+
+      <p className="text-sm text-gray-500 mb-3">
+        Please tell us why you are reporting this profile.
+      </p>
+
+      <select
+        value={reportReason}
+        onChange={(e) => setReportReason(e.target.value)}
+        className="w-full h-10 rounded-lg border border-[#e5d5c5] px-3 text-sm outline-none"
+      >
+        <option value="">Select a reason</option>
+        <option value="Fake Profile">Fake Profile</option>
+        <option value="Inappropriate Behaviour">
+          Inappropriate Behaviour
+        </option>
+        <option value="Harassment">Harassment</option>
+        <option value="Fraud or Scam">Fraud or Scam</option>
+        <option value="Wrong Information">Wrong Information</option>
+        <option value="Other">Other</option>
+      </select>
+
+      <textarea
+        value={reportExplanation}
+        onChange={(e) => setReportExplanation(e.target.value)}
+        placeholder="Explain the issue (optional)"
+        rows={4}
+        className="w-full mt-3 rounded-lg border border-[#e5d5c5] px-3 py-2 text-sm outline-none resize-none"
+      />
+
+      <div className="flex justify-end gap-3 mt-4">
+        <button
+          onClick={() => {
+            setShowReportModal(false);
+            setReportReason("");
+            setReportExplanation("");
+          }}
+          className="px-4 py-2 rounded-lg border border-[#e5d5c5] text-sm"
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={handleReportProfile}
+          disabled={reporting}
+          className="px-4 py-2 rounded-lg bg-[#d9272e] text-white text-sm"
+        >
+          {reporting ? "Submitting..." : "Submit Report"}
+        </button>
+      </div>
+
+    </div>
+  </div>
+)}
     </div>
   );
 }

@@ -287,15 +287,52 @@ export const getMyConversations = async (req, res) => {
     // ONLY KEEP CONVERSATIONS WITH ACCEPTED USERS
     // ==================================================
 
-    const allowedConversations =
-      (conversations || []).filter((conversation) => {
-        const otherUserId =
-          conversation.user1_id === userId
-            ? conversation.user2_id
-            : conversation.user1_id;
+   // ==================================================
+// GET HIDDEN PROFILES
+// ==================================================
 
-        return acceptedUserIds.has(otherUserId);
-      });
+const {
+  data: hiddenProfiles,
+  error: hiddenProfilesError,
+} = await supabase
+  .from("hidden_profiles")
+  .select("hidden_user_id")
+  .eq("user_id", userId);
+
+if (hiddenProfilesError) {
+  console.error(
+    "Get hidden profiles error:",
+    hiddenProfilesError
+  );
+
+  return res.status(500).json({
+    success: false,
+    message: "Unable to fetch hidden profiles",
+  });
+}
+
+const hiddenUserIds = new Set(
+  (hiddenProfiles || []).map(
+    (profile) => profile.hidden_user_id
+  )
+);
+
+// ==================================================
+// ONLY KEEP ACCEPTED + NOT HIDDEN CONVERSATIONS
+// ==================================================
+
+const allowedConversations =
+  (conversations || []).filter((conversation) => {
+    const otherUserId =
+      conversation.user1_id === userId
+        ? conversation.user2_id
+        : conversation.user1_id;
+
+    return (
+      acceptedUserIds.has(otherUserId) &&
+      !hiddenUserIds.has(otherUserId)
+    );
+  });
 
     // ==================================================
     // GET OTHER USER + LAST MESSAGE
@@ -367,20 +404,47 @@ export const getMyConversations = async (req, res) => {
             const lastMessage =
               lastMessages?.[0] || null;
 
+            // ------------------------------------------
+// UNREAD MESSAGE COUNT
+// ------------------------------------------
+
+const {
+  count: unreadCount,
+  error: unreadError,
+} = await supabase
+  .from("messages")
+  .select("id", {
+    count: "exact",
+    head: true,
+  })
+  .eq("conversation_id", conversation.id)
+  .eq("receiver_id", userId)
+  .eq("is_read", false);
+
+if (unreadError) {
+  console.error(
+    "Get unread message count error:",
+    unreadError
+  );
+}
+
+
             return {
-              id: conversation.id,
-              created_at:
-                conversation.created_at,
+  id: conversation.id,
+  created_at:
+    conversation.created_at,
 
-              otherUser:
-                otherUser || {
-                  id: otherUserId,
-                  full_name: "Unknown User",
-                  profile_photo: null,
-                },
+  otherUser:
+    otherUser || {
+      id: otherUserId,
+      full_name: "Unknown User",
+      profile_photo: null,
+    },
 
-              lastMessage,
-            };
+  lastMessage,
+
+  unreadCount: unreadCount || 0,
+};
           }
         )
       );
@@ -504,14 +568,17 @@ export const getMessages = async (req, res) => {
     } = await supabase
       .from("messages")
       .select(`
-        id,
-        conversation_id,
-        sender_id,
-        receiver_id,
-        message,
-        image_url,
-        is_read,
-        created_at
+       id,
+conversation_id,
+sender_id,
+receiver_id,
+message,
+image_url,
+is_read,
+deleted_for_sender,
+deleted_for_receiver,
+deleted_for_everyone,
+created_at
       `)
       .eq(
         "conversation_id",
@@ -520,7 +587,26 @@ export const getMessages = async (req, res) => {
       .order("created_at", {
         ascending: true,
       });
+const visibleMessages = (messages || []).filter(
+  (message) => {
+    // Delete for everyone
+    if (message.deleted_for_everyone) {
+      return false;
+    }
 
+    // Current user is sender
+    if (message.sender_id === userId) {
+      return !message.deleted_for_sender;
+    }
+
+    // Current user is receiver
+    if (message.receiver_id === userId) {
+      return !message.deleted_for_receiver;
+    }
+
+    return false;
+  }
+);
     if (messagesError) {
       console.error(
         "Get messages error:",
@@ -536,7 +622,7 @@ export const getMessages = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      messages: messages || [],
+      messages: visibleMessages,
     });
   } catch (error) {
     console.error(
@@ -781,6 +867,258 @@ export const sendMessage = async (req, res) => {
       message:
         error.message ||
         "Internal server error",
+    });
+  }
+};
+
+// ======================================================
+// MARK MESSAGE AS READ
+// ======================================================
+
+export const markMessageAsRead = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { messageId } = req.params;
+
+    if (!messageId) {
+      return res.status(400).json({
+        success: false,
+        message: "Message ID is required",
+      });
+    }
+
+    const { data: message, error: findError } =
+      await supabase
+        .from("messages")
+        .select("id, receiver_id, is_read")
+        .eq("id", messageId)
+        .maybeSingle();
+
+    if (findError) {
+      console.error(
+        "Find message error:",
+        findError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to find message",
+      });
+    }
+
+    if (!message) {
+      return res.status(404).json({
+        success: false,
+        message: "Message not found",
+      });
+    }
+
+    // Only receiver can mark the message as read
+    if (message.receiver_id !== userId) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "You cannot mark this message as read",
+      });
+    }
+
+    if (message.is_read) {
+      return res.status(200).json({
+        success: true,
+        message: "Message already marked as read",
+      });
+    }
+
+    const { data: updatedMessage, error: updateError } =
+      await supabase
+        .from("messages")
+        .update({
+          is_read: true,
+        })
+        .eq("id", messageId)
+        .eq("receiver_id", userId)
+        .select()
+        .single();
+
+    if (updateError) {
+      console.error(
+        "Mark message read error:",
+        updateError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Unable to mark message as read",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Message marked as read",
+      data: updatedMessage,
+    });
+  } catch (error) {
+    console.error(
+      "Mark message read error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        error.message ||
+        "Internal server error",
+    });
+  }
+};
+
+
+// Delete message for me
+export const deleteMessageForMe = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { messageId } = req.params;
+
+    const { data: message, error: findError } = await supabase
+      .from("messages")
+      .select("id, sender_id, receiver_id")
+      .eq("id", messageId)
+      .maybeSingle();
+
+    if (findError) {
+      console.error("Find message error:", findError);
+      return res.status(500).json({
+        success: false,
+        message: "Unable to find message",
+      });
+    }
+
+    if (!message) {
+      return res.status(404).json({
+        success: false,
+        message: "Message not found",
+      });
+    }
+
+    // User must be sender or receiver
+    if (
+      message.sender_id !== userId &&
+      message.receiver_id !== userId
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You cannot delete this message",
+      });
+    }
+
+    const updateData =
+      message.sender_id === userId
+        ? { deleted_for_sender: true }
+        : { deleted_for_receiver: true };
+
+    const { data, error } = await supabase
+      .from("messages")
+      .update(updateData)
+      .eq("id", messageId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Delete message for me error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Unable to delete message",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Message deleted for you",
+      data,
+    });
+  } catch (error) {
+    console.error("Delete message for me error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+
+// Delete message for everyone
+export const deleteMessageForEveryone = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { messageId } = req.params;
+
+    const { data: message, error: findError } = await supabase
+      .from("messages")
+      .select("id, sender_id, deleted_for_everyone")
+      .eq("id", messageId)
+      .maybeSingle();
+
+    if (findError) {
+      console.error("Find message error:", findError);
+      return res.status(500).json({
+        success: false,
+        message: "Unable to find message",
+      });
+    }
+
+    if (!message) {
+      return res.status(404).json({
+        success: false,
+        message: "Message not found",
+      });
+    }
+
+    // Only sender can delete for everyone
+    if (message.sender_id !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Only the sender can delete this message for everyone",
+      });
+    }
+
+    if (message.deleted_for_everyone) {
+      return res.status(200).json({
+        success: true,
+        message: "Message already deleted for everyone",
+      });
+    }
+
+    const { data, error } = await supabase
+      .from("messages")
+      .update({
+        deleted_for_everyone: true,
+      })
+      .eq("id", messageId)
+      .eq("sender_id", userId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Delete message for everyone error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Unable to delete message for everyone",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Message deleted for everyone",
+      data,
+    });
+  } catch (error) {
+    console.error("Delete message for everyone error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
     });
   }
 };

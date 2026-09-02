@@ -55,7 +55,12 @@ const membership = memberships[0];
 // --------------------------------
 // PROFILE LIMIT CHECK
 // --------------------------------
-
+if (!membership) {
+  setHasMembership(false);
+  setProfiles([]);
+  setLoading(false);
+  return;
+}
 let profileLimit;
 
 if (membership.plan_name === "Basic") {
@@ -193,19 +198,8 @@ setProfiles(visibleProfiles);
   // LOADING
   // --------------------------------
   if (loading) {
-    return (
-      <section
-        id="profiles"
-        className="bg-[#fffaf2] px-4 py-16"
-      >
-        <div className="mx-auto max-w-[1180px] text-center">
-          <p className="text-[13px] text-[#806653]">
-            Loading profiles...
-          </p>
-        </div>
-      </section>
-    );
-  }
+  return null;
+}
 
   // --------------------------------
   // NO MEMBERSHIP

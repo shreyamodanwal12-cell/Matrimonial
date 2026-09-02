@@ -8,6 +8,9 @@ import {
   getMessages,
   sendMessage,
   uploadChatImage,
+  markMessageAsRead,
+  deleteMessageForMe,
+deleteMessageForEveryone,
 } from "../controllers/chatController.js";
 
 const router = express.Router();
@@ -45,7 +48,11 @@ router.get(
   getMessages
 );
 
-
+router.patch(
+  "/messages/:messageId/read",
+  authMiddleware,
+  markMessageAsRead
+);
 // ======================================================
 // SEND MESSAGE
 // ======================================================
@@ -57,5 +64,15 @@ router.post(
   sendMessage
 );
 
+router.delete(
+  "/messages/:messageId/me",
+  authMiddleware,
+  deleteMessageForMe
+);
 
+router.delete(
+  "/messages/:messageId/everyone",
+  authMiddleware,
+  deleteMessageForEveryone
+);
 export default router;

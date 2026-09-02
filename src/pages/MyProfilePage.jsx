@@ -586,7 +586,15 @@ const handleSaveFamily = async () => {
 
 
       {/* ================= HEADER ================= */}
-
+      <div className="px-4 pb-5 pt-7">
+<button
+  type="button"
+  onClick={() => window.history.back()}
+  className="mb-4 inline-flex items-center gap-2 rounded-lg border border-[#eadfce] bg-white px-4 py-2 text-[10px] font-semibold text-[#563927] hover:bg-[#fff5e8]"
+>
+  ← Back
+</button>
+</div>
       <div className="px-4 pb-5 pt-7 text-center">
 
         <p className="text-[9px] font-semibold uppercase tracking-[3px] text-[#a67c35]">

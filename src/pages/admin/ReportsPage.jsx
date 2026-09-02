@@ -23,6 +23,59 @@ function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+const [profileReports, setProfileReports] = useState([]);
+const [profileReportsLoading, setProfileReportsLoading] = useState(true);
+const [profileReportsError, setProfileReportsError] = useState("");
+const [selectedProfileReport, setSelectedProfileReport] = useState(null);
+  // =====================================================
+  // FETCH PROFILE REPORTS
+  // =====================================================
+
+  const fetchProfileReports = async () => {
+    try {
+      setProfileReportsLoading(true);
+      setProfileReportsError("");
+
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/profiles/reports/admin`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || "Failed to fetch profile reports"
+        );
+      }
+
+      setProfileReports(data.reports || []);
+    } catch (error) {
+      console.error(
+        "Fetch profile reports error:",
+        error
+      );
+
+      setProfileReportsError(
+        error.message || "Unable to load profile reports"
+      );
+    } finally {
+      setProfileReportsLoading(false);
+    }
+  };
+
 
   // =====================================================
   // FETCH REPORTS
@@ -93,8 +146,9 @@ const response = await fetch(
 };
 
 
- useEffect(() => {
+useEffect(() => {
   fetchReports();
+  fetchProfileReports();
 }, [period]);
 
 
@@ -841,7 +895,178 @@ const response = await fetch(
           </div>
 
         </div>
+{/* ================= PROFILE REPORTS ================= */}
 
+<div className="mt-5 rounded-xl border border-[#eadfce] bg-white p-5 shadow-[0_4px_18px_rgba(73,38,20,0.04)]">
+
+  <div>
+    <h3 className="font-serif text-[21px] font-semibold text-[#4a1712]">
+      🚩 Profile Reports
+    </h3>
+
+    <p className="mt-1 text-[9px] text-[#9a806f]">
+      Reports submitted by members
+    </p>
+  </div>
+
+
+  {profileReportsLoading ? (
+
+    <div className="py-10 text-center">
+      <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-[#eadfce] border-t-[#8c1d18]" />
+
+      <p className="mt-3 text-[9px] text-[#9a806f]">
+        Loading profile reports...
+      </p>
+    </div>
+
+  ) : profileReportsError ? (
+
+    <div className="py-10 text-center">
+
+      <div className="text-2xl">
+        ⚠️
+      </div>
+
+      <p className="mt-2 text-[10px] text-[#b63b3b]">
+        {profileReportsError}
+      </p>
+
+    </div>
+
+  ) : profileReports.length === 0 ? (
+
+    <div className="py-10 text-center">
+
+      <div className="text-2xl">
+        🛡️
+      </div>
+
+      <p className="mt-2 text-[10px] font-semibold text-[#4f3425]">
+        No profile reports
+      </p>
+
+      <p className="mt-1 text-[8px] text-[#9a806f]">
+        No members have reported a profile yet.
+      </p>
+
+    </div>
+
+  ) : (
+
+    <div className="mt-5 overflow-x-auto">
+
+      <table className="w-full min-w-[700px]">
+
+        <thead>
+  <tr className="border-b border-[#eadfce] text-left">
+
+    <th className="px-3 py-3 text-[8px] uppercase tracking-[1px] text-[#9a806f]">
+      Reported Profile
+    </th>
+
+    <th className="px-3 py-3 text-[8px] uppercase tracking-[1px] text-[#9a806f]">
+      Total Reports
+    </th>
+
+    <th className="px-3 py-3 text-[8px] uppercase tracking-[1px] text-[#9a806f]">
+      Latest Report
+    </th>
+
+    <th className="px-3 py-3 text-[8px] uppercase tracking-[1px] text-[#9a806f]">
+      Action
+    </th>
+
+  </tr>
+</thead>
+
+
+        <tbody>
+  {profileReports.map((report) => (
+    <tr
+      key={report.reportedUserId}
+      className="cursor-pointer border-b border-[#f0e5d8] transition hover:bg-[#fffaf5]"
+      onClick={() => setSelectedProfileReport(report)}
+    >
+
+      {/* Reported Profile */}
+
+      <td className="px-3 py-4">
+        <div className="flex items-center gap-2">
+
+          <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-[#fff5e8]">
+            {report.reportedUser?.profile_photo ? (
+              <img
+                src={report.reportedUser.profile_photo}
+                alt={report.reportedUser.full_name || "Profile"}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-[11px]">
+                👤
+              </div>
+            )}
+          </div>
+
+          <span className="text-[9px] font-semibold text-[#4f3425]">
+            {report.reportedUser?.full_name || "Unknown Profile"}
+          </span>
+
+        </div>
+      </td>
+
+
+      {/* Total Reports */}
+
+      <td className="px-3 py-4">
+        <span className="rounded-full bg-[#fff0f0] px-3 py-1 text-[9px] font-semibold text-[#8c1d18]">
+          {report.totalReports}{" "}
+          {report.totalReports === 1 ? "Report" : "Reports"}
+        </span>
+      </td>
+
+
+      {/* Latest Report */}
+
+      <td className="px-3 py-4">
+        <span className="text-[8px] text-[#9a806f]">
+          {report.latestReport
+            ? new Date(
+                report.latestReport
+              ).toLocaleDateString()
+            : "-"}
+        </span>
+      </td>
+
+
+      {/* Action */}
+
+      <td className="px-3 py-4">
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedProfileReport(report);
+          }}
+          className="rounded-lg border border-[#eadfce] bg-[#fffaf5] px-3 py-1.5 text-[8px] font-semibold text-[#8c1d18] hover:bg-[#fff0e8]"
+        >
+          View Reports →
+        </button>
+
+      </td>
+
+    </tr>
+  ))}
+</tbody>
+
+      </table>
+
+    </div>
+
+  )}
+
+</div>
 
         {/* ================= RECENT ACTIVITY ================= */}
 
@@ -920,7 +1145,243 @@ const response = await fetch(
         </div>
 
       </main>
+      {/* ================= PROFILE REPORT DETAILS MODAL ================= */}
 
+      {selectedProfileReport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+
+          <div className="max-h-[90vh] w-full max-w-[750px] overflow-hidden rounded-2xl border border-[#eadfce] bg-white shadow-2xl">
+
+            {/* Modal Header */}
+
+            <div className="flex items-center justify-between border-b border-[#eadfce] px-5 py-4">
+
+              <div className="flex items-center gap-3">
+
+                <div className="h-11 w-11 overflow-hidden rounded-full bg-[#fff5e8]">
+
+                  {selectedProfileReport.reportedUser?.profile_photo ? (
+                    <img
+                      src={
+                        selectedProfileReport.reportedUser.profile_photo
+                      }
+                      alt={
+                        selectedProfileReport.reportedUser.full_name ||
+                        "Profile"
+                      }
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      👤
+                    </div>
+                  )}
+
+                </div>
+
+                <div>
+
+                  <p className="text-[9px] uppercase tracking-[1.5px] text-[#a67c35]">
+                    Reports Against
+                  </p>
+
+                  <h3 className="font-serif text-[20px] font-semibold text-[#4a1712]">
+                    {selectedProfileReport.reportedUser?.full_name ||
+                      "Unknown Profile"}
+                  </h3>
+
+                </div>
+
+              </div>
+
+
+              <button
+                type="button"
+                onClick={() => setSelectedProfileReport(null)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-[18px] text-[#806653] hover:bg-[#fff5e8]"
+              >
+                ×
+              </button>
+
+            </div>
+
+
+            {/* Summary */}
+
+            <div className="border-b border-[#eadfce] bg-[#fffaf5] px-5 py-4">
+
+              <div className="flex items-center justify-between">
+
+                <div>
+
+                  <p className="text-[8px] uppercase tracking-[1px] text-[#9a806f]">
+                    Total Reports
+                  </p>
+
+                  <p className="mt-1 font-serif text-[25px] font-semibold text-[#8c1d18]">
+                    {selectedProfileReport.totalReports}
+                  </p>
+
+                </div>
+
+                <div className="text-right">
+
+                  <p className="text-[8px] uppercase tracking-[1px] text-[#9a806f]">
+                    Latest Report
+                  </p>
+
+                  <p className="mt-1 text-[10px] font-semibold text-[#4f3425]">
+                    {selectedProfileReport.latestReport
+                      ? new Date(
+                          selectedProfileReport.latestReport
+                        ).toLocaleDateString()
+                      : "-"}
+                  </p>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            {/* All Reports */}
+
+            <div className="max-h-[60vh] overflow-y-auto p-5">
+
+              <h4 className="mb-4 font-serif text-[17px] font-semibold text-[#4a1712]">
+                All Submitted Reports
+              </h4>
+
+
+              <div className="space-y-4">
+
+                {selectedProfileReport.reports?.map(
+                  (report, index) => (
+
+                    <div
+                      key={report.id}
+                      className="rounded-xl border border-[#eadfce] bg-[#fffdf9] p-4"
+                    >
+
+                      {/* Reporter */}
+
+                      <div className="flex items-center justify-between gap-3">
+
+                        <div className="flex items-center gap-3">
+
+                          <div className="h-9 w-9 overflow-hidden rounded-full bg-[#fff5e8]">
+
+                            {report.reporter?.profile_photo ? (
+                              <img
+                                src={report.reporter.profile_photo}
+                                alt={
+                                  report.reporter.full_name ||
+                                  "Reporter"
+                                }
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-[11px]">
+                                👤
+                              </div>
+                            )}
+
+                          </div>
+
+                          <div>
+
+                            <p className="text-[9px] text-[#9a806f]">
+                              Report #{index + 1}
+                            </p>
+
+                            <p className="text-[10px] font-semibold text-[#4f3425]">
+                              {report.reporter?.full_name ||
+                                "Unknown User"}
+                            </p>
+
+                          </div>
+
+                        </div>
+
+
+                        <span className="text-[8px] text-[#9a806f]">
+                          {report.created_at
+                            ? new Date(
+                                report.created_at
+                              ).toLocaleString()
+                            : "-"}
+                        </span>
+
+                      </div>
+
+
+                      {/* Reason */}
+
+                      <div className="mt-4">
+
+                        <p className="text-[8px] uppercase tracking-[1px] text-[#9a806f]">
+                          Reason
+                        </p>
+
+                        <div className="mt-1">
+
+                          <span className="inline-block rounded-md bg-[#fff0f0] px-2.5 py-1 text-[9px] font-semibold text-[#8c1d18]">
+                            {report.reason || "Not specified"}
+                          </span>
+
+                        </div>
+
+                      </div>
+
+
+                      {/* Explanation */}
+
+                      <div className="mt-4">
+
+                        <p className="text-[8px] uppercase tracking-[1px] text-[#9a806f]">
+                          Message / Explanation
+                        </p>
+
+                        <div className="mt-1 rounded-lg bg-[#fffaf5] p-3">
+
+                          <p className="whitespace-pre-wrap text-[9px] leading-5 text-[#563927]">
+                            {report.explanation ||
+                              "No additional explanation provided."}
+                          </p>
+
+                        </div>
+
+                      </div>
+
+                    </div>
+
+                  )
+                )}
+
+              </div>
+
+            </div>
+
+
+            {/* Footer */}
+
+            <div className="flex justify-end border-t border-[#eadfce] px-5 py-4">
+
+              <button
+                type="button"
+                onClick={() => setSelectedProfileReport(null)}
+                className="rounded-lg bg-[#8c1d18] px-5 py-2.5 text-[9px] font-semibold text-white hover:bg-[#701510]"
+              >
+                Close
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
     </div>
   );
 }

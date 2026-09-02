@@ -28,6 +28,8 @@ import AdminTestimonialsPage from "./pages/admin/AdminTestimonialsPage";
 import AadhaarVerificationPage from "./pages/AadhaarVerificationPage";
 import InterestRequestsPage from "./pages/InterestRequestsPage";
 import MyInterestsPage from "./pages/MyInterestsPage";
+import AccountActivityPage from "./pages/AccountActivityPage";
+
 
 function App() {
   const path = window.location.pathname;
@@ -101,6 +103,9 @@ if (path === "/interest-requests") {
 }
 if (path === "/my-interests") {
   return <MyInterestsPage />;
+}
+if (path === "/account-activity") {
+  return <AccountActivityPage />;
 }
   // ================================
   // ADMIN PROTECTION

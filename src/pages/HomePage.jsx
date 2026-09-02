@@ -9,7 +9,7 @@ import HowItWorks from "../components/HowItWorks";
 import Testimonials from "../components/Testimonials";
 import Footer from "../components/Footer";
 import Reveal from "../components/Reveal";
-
+import ChoosePackage from "../components/ChoosePackage";
 function HomePage() {
   const [showPopup, setShowPopup] = useState(true);
 
@@ -26,6 +26,7 @@ function HomePage() {
         <SearchBox />
       </Reveal>
 
+
       <Reveal>
         <FeaturedProfiles />
       </Reveal>
@@ -41,7 +42,11 @@ function HomePage() {
       <Reveal>
         <Testimonials />
       </Reveal>
-
+<Reveal>
+  <div id="packages">
+    <ChoosePackage />
+  </div>
+</Reveal>
       <Reveal>
         <Footer />
       </Reveal>

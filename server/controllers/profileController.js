@@ -1244,3 +1244,443 @@ export const checkAadharVerification = async (req, res) => {
     });
   }
 };
+
+export const hideProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { hiddenUserId } = req.params;
+
+    if (!hiddenUserId) {
+      return res.status(400).json({
+        success: false,
+        message: "Profile ID is required",
+      });
+    }
+
+    if (userId === hiddenUserId) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot hide your own profile",
+      });
+    }
+
+    const { data, error } = await supabase
+      .from("hidden_profiles")
+      .insert([
+        {
+          user_id: userId,
+          hidden_user_id: hiddenUserId,
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      // Already hidden
+      if (error.code === "23505") {
+        return res.status(200).json({
+          success: true,
+          message: "Profile is already hidden",
+        });
+      }
+
+      console.error("Hide profile error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to hide profile",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile hidden successfully",
+      data,
+    });
+  } catch (error) {
+    console.error("Hide profile error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export const unhideProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { hiddenUserId } = req.params;
+
+    if (!hiddenUserId) {
+      return res.status(400).json({
+        success: false,
+        message: "Profile ID is required",
+      });
+    }
+
+    const { error } = await supabase
+      .from("hidden_profiles")
+      .delete()
+      .eq("user_id", userId)
+      .eq("hidden_user_id", hiddenUserId);
+
+    if (error) {
+      console.error(
+        "Unhide profile error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to unhide profile",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile unhidden successfully",
+    });
+  } catch (error) {
+    console.error(
+      "Unhide profile error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export const getHiddenProfiles = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const { data: hiddenProfiles, error } = await supabase
+      .from("hidden_profiles")
+      .select("hidden_user_id")
+      .eq("user_id", userId);
+
+    if (error) {
+      console.error("Get hidden profiles error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to fetch hidden profiles",
+      });
+    }
+
+    const hiddenUserIds = (hiddenProfiles || []).map(
+      (profile) => profile.hidden_user_id
+    );
+
+    if (hiddenUserIds.length === 0) {
+      return res.status(200).json({
+        success: true,
+        profiles: [],
+      });
+    }
+
+    const { data: profiles, error: profilesError } = await supabase
+      .from("users")
+      .select("id, full_name, profile_photo")
+      .in("id", hiddenUserIds);
+
+    if (profilesError) {
+      console.error("Get hidden users error:", profilesError);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to fetch hidden profiles",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      profiles: profiles || [],
+    });
+  } catch (error) {
+    console.error("Get hidden profiles error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export const reportProfile = async (req, res) => {
+  try {
+    const reporterId = req.user.id;
+    const { reportedUserId } = req.params;
+    const { reason, explanation } = req.body;
+
+    if (!reportedUserId) {
+      return res.status(400).json({
+        success: false,
+        message: "Profile ID is required",
+      });
+    }
+
+    if (reporterId === reportedUserId) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot report your own profile",
+      });
+    }
+
+    if (!reason) {
+      return res.status(400).json({
+        success: false,
+        message: "Report reason is required",
+      });
+    }
+
+    const { data, error } = await supabase
+      .from("profile_reports")
+      .insert([
+        {
+          reporter_id: reporterId,
+          reported_user_id: reportedUserId,
+          reason,
+          explanation: explanation || null,
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Report profile error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to submit report",
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "Profile reported successfully",
+      report: data,
+    });
+  } catch (error) {
+    console.error("Report profile error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export const getMyReports = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const { data: reports, error } = await supabase
+      .from("profile_reports")
+      .select(`
+        id,
+        reported_user_id,
+        reason,
+        explanation,
+        status,
+        admin_note,
+        created_at
+      `)
+      .eq("reporter_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Get my reports error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to fetch reports",
+      });
+    }
+
+    const reportedUserIds = [
+      ...new Set(
+        (reports || []).map((report) => report.reported_user_id)
+      ),
+    ];
+
+    let users = [];
+
+    if (reportedUserIds.length > 0) {
+      const { data: userData, error: usersError } = await supabase
+        .from("users")
+        .select("id, full_name, profile_photo")
+        .in("id", reportedUserIds);
+
+      if (usersError) {
+        console.error("Get reported users error:", usersError);
+
+        return res.status(500).json({
+          success: false,
+          message: "Unable to fetch reported profiles",
+        });
+      }
+
+      users = userData || [];
+    }
+
+    const formattedReports = (reports || []).map((report) => ({
+      ...report,
+      reportedUser:
+        users.find(
+          (user) => user.id === report.reported_user_id
+        ) || null,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      reports: formattedReports,
+    });
+  } catch (error) {
+    console.error("Get my reports error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export const getAllProfileReports = async (req, res) => {
+  try {
+    const { data: reports, error } = await supabase
+      .from("profile_reports")
+      .select(`
+        id,
+        reporter_id,
+        reported_user_id,
+        reason,
+        explanation,
+        status,
+        admin_note,
+        created_at
+      `)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Get all profile reports error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to fetch profile reports",
+      });
+    }
+
+    const allReports = reports || [];
+
+    // ---------------------------------------------
+    // Get all reporter + reported profile IDs
+    // ---------------------------------------------
+
+    const userIds = [
+      ...new Set(
+        allReports.flatMap((report) => [
+          report.reporter_id,
+          report.reported_user_id,
+        ])
+      ),
+    ];
+
+    let users = [];
+
+    if (userIds.length > 0) {
+      const { data: userData, error: usersError } =
+        await supabase
+          .from("users")
+          .select("id, full_name, profile_photo")
+          .in("id", userIds);
+
+      if (usersError) {
+        console.error(
+          "Get report users error:",
+          usersError
+        );
+
+        return res.status(500).json({
+          success: false,
+          message: "Unable to fetch report users",
+        });
+      }
+
+      users = userData || [];
+    }
+
+    // ---------------------------------------------
+    // Group reports by reported profile
+    // ---------------------------------------------
+
+    const groupedReports = {};
+
+    allReports.forEach((report) => {
+      const reportedUserId = report.reported_user_id;
+
+      if (!groupedReports[reportedUserId]) {
+        const reportedUser = users.find(
+          (user) => user.id === reportedUserId
+        );
+
+        groupedReports[reportedUserId] = {
+          reportedUserId,
+          reportedUser: reportedUser || null,
+          totalReports: 0,
+          reports: [],
+          latestReport: report.created_at,
+        };
+      }
+
+      const reporter = users.find(
+        (user) => user.id === report.reporter_id
+      );
+
+      groupedReports[reportedUserId].totalReports += 1;
+
+      groupedReports[reportedUserId].reports.push({
+        id: report.id,
+
+        reporter: reporter || null,
+
+        reason: report.reason,
+
+        explanation: report.explanation,
+
+        status: report.status,
+
+        admin_note: report.admin_note,
+
+        created_at: report.created_at,
+      });
+    });
+
+    // ---------------------------------------------
+    // Convert object into array
+    // ---------------------------------------------
+
+    const groupedReportList = Object.values(
+      groupedReports
+    );
+
+    return res.status(200).json({
+      success: true,
+      reports: groupedReportList,
+    });
+  } catch (error) {
+    console.error(
+      "Get all profile reports error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};

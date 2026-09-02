@@ -70,12 +70,14 @@ function Footer() {
               >
                 About Us
               </a>
-<a
-  href="/chairman"
-  className="w-fit text-[11px] text-[#d8bfae] transition hover:text-[#f5c45e]"
->
-  About Chairman
-</a>
+
+              <a
+                href="/chairman"
+                className="w-fit text-[11px] text-[#d8bfae] transition hover:text-[#f5c45e]"
+              >
+                About Chairman
+              </a>
+
               <a
                 href="#how"
                 className="w-fit text-[11px] text-[#d8bfae] transition hover:text-[#f5c45e]"
@@ -112,6 +114,7 @@ function Footer() {
                 </span>
 
                 <div className="text-[11px] leading-5 text-[#d8bfae]">
+
                   <a
                     href="tel:9632592555"
                     className="block hover:text-[#f5c45e]"
@@ -125,6 +128,7 @@ function Footer() {
                   >
                     9448388711
                   </a>
+
                 </div>
 
               </div>
@@ -168,21 +172,77 @@ function Footer() {
           </div>
 
 
-          {/* CTA */}
+          {/* Connect With Us */}
           <div>
 
             <h3 className="font-serif text-[20px] font-semibold text-[#f5c45e]">
-              Begin Your Journey
+              Connect With Us
             </h3>
 
-            <p className="mt-4 text-[11px] leading-6 text-[#d8bfae]">
+            <div className="mt-4 flex flex-col gap-3">
+
+              {/* Website */}
+              <a
+                href="https://matrimonial-alpha.vercel.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-fit text-[11px] text-[#d8bfae] transition hover:text-[#f5c45e]"
+              >
+                🌐 Website
+              </a>
+
+              {/* Google Maps */}
+              <a
+                href="https://maps.app.goo.gl/nv7Ljv4762Ejj9wZA"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-fit text-[11px] text-[#d8bfae] transition hover:text-[#f5c45e]"
+              >
+                📍 Visit Us
+              </a>
+
+              {/* Instagram */}
+              <a
+                href="https://www.instagram.com/shivaparvati_matrimonial_trust"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-fit text-[11px] text-[#d8bfae] transition hover:text-[#f5c45e]"
+              >
+                📸 Instagram
+              </a>
+
+              {/* Facebook */}
+              <a
+                href="https://www.facebook.com/share/1Koj1kAyAd/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-fit text-[11px] text-[#d8bfae] transition hover:text-[#f5c45e]"
+              >
+                📘 Facebook
+              </a>
+
+              {/* Google Review */}
+              <a
+                href="https://share.google/Tp0ghEOKNAq0TnIJk"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-fit text-[11px] text-[#d8bfae] transition hover:text-[#f5c45e]"
+              >
+                ⭐ Review Us on Google
+              </a>
+
+            </div>
+
+
+            {/* CTA */}
+            <p className="mt-5 text-[11px] leading-6 text-[#d8bfae]">
               Take the first step towards finding someone special.
             </p>
 
             <a
               href="/register"
               className="
-                mt-5
+                mt-4
                 inline-flex
                 rounded-md
                 bg-[#f2c15b]
@@ -217,28 +277,28 @@ function Footer() {
 
           <div className="flex flex-wrap items-center justify-center gap-4 sm:justify-end">
 
-  <a
-    href="/privacy-policy"
-    className="text-[10px] text-[#bfa494] transition hover:text-[#f5c45e]"
-  >
-    Privacy Policy
-  </a>
+            <a
+              href="/privacy-policy"
+              className="text-[10px] text-[#bfa494] transition hover:text-[#f5c45e]"
+            >
+              Privacy Policy
+            </a>
 
-  <a
-    href="/terms"
-    className="text-[10px] text-[#bfa494] transition hover:text-[#f5c45e]"
-  >
-    Terms &amp; Conditions
-  </a>
+            <a
+              href="/terms"
+              className="text-[10px] text-[#bfa494] transition hover:text-[#f5c45e]"
+            >
+              Terms &amp; Conditions
+            </a>
 
-  <a
-    href="/refund-policy"
-    className="text-[10px] text-[#bfa494] transition hover:text-[#f5c45e]"
-  >
-    Refund Policy
-  </a>
+            <a
+              href="/refund-policy"
+              className="text-[10px] text-[#bfa494] transition hover:text-[#f5c45e]"
+            >
+              Refund Policy
+            </a>
 
-</div>
+          </div>
 
         </div>
 

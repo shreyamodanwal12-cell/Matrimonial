@@ -5,6 +5,7 @@ function Navbar() {
   const [open, setOpen] = useState(false);
 const [accountOpen, setAccountOpen] = useState(false);
 const [notificationCount, setNotificationCount] = useState(0);
+
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user") || "null");
 useEffect(() => {
@@ -81,12 +82,7 @@ useEffect(() => {
             Home
           </a>
 
-          <a
-            href="#public-profile"
-            className="text-[13px] font-medium text-[#563927] transition hover:text-[#9b261f]"
-          >
-            Profiles
-          </a>
+         
 
           <a
             href="#about"
@@ -94,6 +90,12 @@ useEffect(() => {
           >
             About Us
           </a>
+          <a
+   href="#packages"
+  className="text-[13px] font-medium text-[#563927] transition hover:text-[#9b261f]"
+>
+  Packages
+</a>
 <a
   href="/chairman"
   className="text-[13px] font-medium text-[#563927] transition hover:text-[#9b261f]"
@@ -173,20 +175,74 @@ useEffect(() => {
       >
         Plans
       </a>
-<a
-  href="/interest-requests"
+      <button
+  type="button"
+  onClick={async () => {
+    const token = localStorage.getItem("token");
+
+    // Login check
+    if (!token) {
+      alert("Please login first.");
+      window.location.href = "/login";
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/membership/my`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      const membership = data.memberships?.[0];
+
+      // Membership check
+      if (
+        !response.ok ||
+        !data.success ||
+        !membership
+      ) {
+        alert("Please take a membership plan first.");
+        window.location.href = "/plans";
+        return;
+      }
+
+      // Active membership check
+      const isActive =
+        membership.status?.toUpperCase() === "ACTIVE" &&
+        membership.end_date &&
+        new Date(membership.end_date) >= new Date();
+
+      if (!isActive) {
+        alert("Your membership has expired. Please take a membership plan.");
+        window.location.href = "/plans";
+        return;
+      }
+
+      // Membership active
+      window.location.href = "#profiles";
+
+    } catch (error) {
+      console.error("Profile Membership Check:", error);
+      alert("Unable to check membership.");
+    }
+  }}
   className="block px-4 py-2 text-[13px] text-[#563927] hover:bg-[#fff5e8]"
-  onClick={() => setAccountOpen(false)}
 >
-  💌 Interest Requests
-</a>
+  Profiles
+</button>
 
 <a
-  href="/my-interests"
+  href="/chat"
   className="block px-4 py-2 text-[13px] text-[#563927] hover:bg-[#fff5e8]"
   onClick={() => setAccountOpen(false)}
 >
-  ❤️ My Interests
+  💬 Chat
 </a>
       <a
         href="/my-membership"
@@ -195,7 +251,15 @@ useEffect(() => {
       >
         My Membership
       </a>
+<div className="my-1 border-t border-[#f0e2d3]" />
 
+<a
+  href="/account-activity"
+  className="block px-4 py-2 text-[13px] text-[#563927] hover:bg-[#fff5e8]"
+  onClick={() => setAccountOpen(false)}
+>
+  ⚙️ Account Activity
+</a>
     </div>
   )}
 
@@ -255,13 +319,7 @@ useEffect(() => {
               Home
             </a>
 
-            <a
-              href="#public-profile"
-              onClick={() => setOpen(false)}
-              className="text-sm text-[#563927]"
-            >
-              Profiles
-            </a>
+            
 
             <a
               href="#about"
@@ -270,6 +328,12 @@ useEffect(() => {
             >
               About Us
             </a>
+            <a
+  href="#packages"
+  className="text-[13px] font-medium text-[#563927] transition hover:text-[#9b261f]"
+>
+  Packages
+</a>
 <a
   href="/chairman"
   onClick={() => setOpen(false)}
@@ -292,21 +356,7 @@ useEffect(() => {
             >
               Contact
             </a>
-<a
-  href="/plans"
-  onClick={() => setOpen(false)}
-  className="text-sm font-medium text-[#8c1d18]"
->
-  Plans
-</a>
 
-<a
-  href="/my-membership"
-  onClick={() => setOpen(false)}
-  className="text-sm font-medium text-[#8c1d18]"
->
-  My Membership
-</a>
             {/* Mobile Logged In */}
             {token && user ? (
               <>
@@ -361,20 +411,74 @@ useEffect(() => {
       >
         Plans
       </a>
-<a
-  href="/interest-requests"
+        <button
+  type="button"
+  onClick={async () => {
+    const token = localStorage.getItem("token");
+
+    // Login check
+    if (!token) {
+      alert("Please login first.");
+      window.location.href = "/login";
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/membership/my`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      const membership = data.memberships?.[0];
+
+      // Membership check
+      if (
+        !response.ok ||
+        !data.success ||
+        !membership
+      ) {
+        alert("Please take a membership plan first.");
+        window.location.href = "/plans";
+        return;
+      }
+
+      // Active membership check
+      const isActive =
+        membership.status?.toUpperCase() === "ACTIVE" &&
+        membership.end_date &&
+        new Date(membership.end_date) >= new Date();
+
+      if (!isActive) {
+        alert("Your membership has expired. Please take a membership plan.");
+        window.location.href = "/plans";
+        return;
+      }
+
+      // Membership active
+      window.location.href = "#profiles";
+
+    } catch (error) {
+      console.error("Profile Membership Check:", error);
+      alert("Unable to check membership.");
+    }
+  }}
   className="block px-4 py-2 text-[13px] text-[#563927] hover:bg-[#fff5e8]"
-  onClick={() => setAccountOpen(false)}
 >
-  💌 Interest Requests
-</a>
+  Profiles
+</button>
 
 <a
-  href="/my-interests"
+  href="/chat"
   className="block px-4 py-2 text-[13px] text-[#563927] hover:bg-[#fff5e8]"
   onClick={() => setAccountOpen(false)}
 >
-  ❤️ My Interests
+  💬 Chat
 </a>
       <a
         href="/my-membership"
@@ -384,6 +488,15 @@ useEffect(() => {
         My Membership
       </a>
 
+<div className="my-1 border-t border-[#f0e2d3]" />
+
+<a
+  href="/account-activity"
+  className="block px-4 py-2 text-[13px] text-[#563927] hover:bg-[#fff5e8]"
+  onClick={() => setAccountOpen(false)}
+>
+  ⚙️ Account Activity
+</a>
     </div>
   )}
 
