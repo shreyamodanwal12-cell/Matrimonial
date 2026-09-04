@@ -366,6 +366,130 @@ useEffect(() => {
     fetchMessages(conversation.id);
   };
 
+
+// ======================================================
+// REALTIME CHAT LIST - NEW MESSAGE
+// ======================================================
+
+useEffect(() => {
+  if (!currentUser?.id) return;
+
+  const channel = frontendSupabase
+    .channel(`chat-list-${currentUser.id}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "messages",
+      },
+      (payload) => {
+        const newMessage = payload.new;
+
+        console.log(
+          "REALTIME NEW MESSAGE:",
+          newMessage
+        );
+
+        // ------------------------------------------
+        // Message sent by me
+        // ------------------------------------------
+
+        if (
+          newMessage.sender_id === currentUser.id
+        ) {
+          setConversations((previousConversations) =>
+            previousConversations
+              .map((conversation) => {
+                if (
+                  conversation.id !==
+                  newMessage.conversation_id
+                ) {
+                  return conversation;
+                }
+
+                return {
+                  ...conversation,
+                  lastMessage: newMessage,
+                  unreadCount: 0,
+                };
+              })
+              .sort((a, b) => {
+                const dateA = new Date(
+                  a.lastMessage?.created_at || 0
+                );
+
+                const dateB = new Date(
+                  b.lastMessage?.created_at || 0
+                );
+
+                return dateB - dateA;
+              })
+          );
+
+          return;
+        }
+
+        // ------------------------------------------
+        // Message received from other user
+        // ------------------------------------------
+
+        if (
+          newMessage.receiver_id === currentUser.id
+        ) {
+          setConversations((previousConversations) =>
+            previousConversations
+              .map((conversation) => {
+                if (
+                  conversation.id !==
+                  newMessage.conversation_id
+                ) {
+                  return conversation;
+                }
+
+                // If this conversation is currently open,
+                // don't show unread count.
+                const isCurrentConversation =
+                  selectedConversation?.id ===
+                  newMessage.conversation_id;
+
+                return {
+                  ...conversation,
+                  lastMessage: newMessage,
+                  unreadCount: isCurrentConversation
+                    ? 0
+                    : (conversation.unreadCount || 0) + 1,
+                };
+              })
+              .sort((a, b) => {
+                const dateA = new Date(
+                  a.lastMessage?.created_at || 0
+                );
+
+                const dateB = new Date(
+                  b.lastMessage?.created_at || 0
+                );
+
+                return dateB - dateA;
+              })
+          );
+        }
+      }
+    )
+    .subscribe((status) => {
+      console.log(
+        "Chat list realtime status:",
+        status
+      );
+    });
+
+  return () => {
+    frontendSupabase.removeChannel(channel);
+  };
+}, [currentUser?.id, selectedConversation?.id]);
+
+
+
   // ======================================================
   // SUPABASE REALTIME
   // ======================================================
