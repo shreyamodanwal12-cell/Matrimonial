@@ -8,10 +8,5 @@ const frontendSupabase = createClient(
   supabaseAnonKey
 );
 
-const token = localStorage.getItem("token");
-
-if (token) {
-  frontendSupabase.realtime.setAuth(token);
-}
-
 export default frontendSupabase;
+

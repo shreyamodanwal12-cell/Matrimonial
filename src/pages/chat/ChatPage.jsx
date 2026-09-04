@@ -40,13 +40,7 @@ const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messagesEndRef = useRef(null);
 
   const token = localStorage.getItem("token");
-useEffect(() => {
-  if (!token) return;
 
-  frontendSupabase.realtime.setAuth(token);
-
-  console.log("🔥 Supabase Realtime auth set");
-}, [token]);
   const currentUser = JSON.parse(
     localStorage.getItem("user") || "null"
   );
