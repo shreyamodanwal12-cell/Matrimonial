@@ -494,161 +494,38 @@ useEffect(() => {
   // SUPABASE REALTIME
   // ======================================================
 
-  useEffect(() => {
-    if (!selectedConversation) {
-      return;
-    }
-
-    const channel =
-      frontendSupabase
-        .channel(
-          `conversation-${selectedConversation.id}`
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "messages",
-            filter: `conversation_id=eq.${selectedConversation.id}`,
-          },
-          (payload) => {
-            console.log(
-              "New message received:",
-              payload.new
-            );
-
-            setMessages(
-              (previousMessages) => {
-                const alreadyExists =
-                  previousMessages.some(
-                    (message) =>
-                      message.id ===
-                      payload.new.id
-                  );
-
-                if (alreadyExists) {
-                  return previousMessages;
-                }
-
-                return [
-                  ...previousMessages,
-                  payload.new,
-                ];
-              }
-            );
-
-            scrollToBottom();
-
-            // Update conversation preview
-            setConversations(
-              (previousConversations) =>
-                previousConversations.map(
-                  (conversation) => {
-                    if (
-                      conversation.id ===
-                      selectedConversation.id
-                    ) {
-                      return {
-                        ...conversation,
-                        lastMessage:
-                          payload.new,
-                      };
-                    }
-
-                    return conversation;
-                  }
-                )
-            );
-          }
-        )
-        .on(
-  "postgres_changes",
-  {
-    event: "UPDATE",
-    schema: "public",
-    table: "messages",
-    filter: `conversation_id=eq.${selectedConversation.id}`,
-  },
-  (payload) => {
-    console.log(
-      "Message updated:",
-      payload.new
-    );
-
-    // Update message inside opened chat
-    setMessages((previousMessages) =>
-      previousMessages.map((message) =>
-        message.id === payload.new.id
-          ? {
-              ...message,
-              ...payload.new,
-            }
-          : message
-      )
-    );
-
-    // Update LEFT conversation preview
-    setConversations((previousConversations) =>
-      previousConversations
-        .map((conversation) => {
-          if (
-            conversation.id !==
-            selectedConversation.id
-          ) {
-            return conversation;
-          }
-
-          // Find whether this updated message
-          // is the latest message
-          const currentLastMessage =
-            conversation.lastMessage;
-
-          if (
-            !currentLastMessage ||
-            currentLastMessage.id ===
-              payload.new.id ||
-            new Date(payload.new.created_at) >=
-              new Date(
-                currentLastMessage.created_at
-              )
-          ) {
-            return {
-              ...conversation,
-              lastMessage: payload.new,
-            };
-          }
-
-          return conversation;
-        })
-        .sort((a, b) => {
-          const dateA = new Date(
-            a.lastMessage?.created_at || 0
-          );
-
-          const dateB = new Date(
-            b.lastMessage?.created_at || 0
-          );
-
-          return dateB - dateA;
-        })
-    );
+useEffect(() => {
+  if (!selectedConversation) {
+    return;
   }
-)
-        .subscribe((status) => {
-          console.log(
-            `Realtime status for conversation ${selectedConversation.id}:`,
-            status
-          );
-        });
 
-    return () => {
-      frontendSupabase.removeChannel(
-        channel
+  const channel = frontendSupabase
+    .channel(`conversation-test-${selectedConversation.id}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "messages",
+      },
+      (payload) => {
+        console.log(
+          "🔥 REALTIME EVENT RECEIVED:",
+          payload
+        );
+      }
+    )
+    .subscribe((status) => {
+      console.log(
+        "🔥 TEST REALTIME STATUS:",
+        status
       );
-    };
-  }, [selectedConversation]);
+    });
 
+  return () => {
+    frontendSupabase.removeChannel(channel);
+  };
+}, [selectedConversation?.id]);
   // ======================================================
   // IMAGE SELECT
   // ======================================================
