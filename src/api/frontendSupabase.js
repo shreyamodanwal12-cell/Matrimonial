@@ -5,8 +5,12 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const frontendSupabase = createClient(
   supabaseUrl,
-  supabaseAnonKey
+  supabaseAnonKey,
+  {
+    accessToken: async () => {
+      return localStorage.getItem("token");
+    },
+  }
 );
 
 export default frontendSupabase;
-

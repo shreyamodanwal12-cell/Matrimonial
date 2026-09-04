@@ -5,15 +5,7 @@ import EmojiPicker from "emoji-picker-react";
 
 
 function ChatPage() {
-  useEffect(() => {
-  const token = localStorage.getItem("token");
-
-  if (!token) return;
-
-  frontendSupabase.realtime.setAuth(token);
-
-  console.log("🔥 Supabase Realtime JWT set");
-}, []);
+  
   
   const [conversations, setConversations] =  useState([]);
   const [selectedConversation, setSelectedConversation] =
@@ -505,63 +497,84 @@ useEffect(() => {
 // SUPABASE REALTIME - LIVE MESSAGES
 // ======================================================
 
+// ======================================================
+// SUPABASE REALTIME - LIVE MESSAGES
+// ======================================================
+
 useEffect(() => {
   if (!selectedConversation?.id || !currentUser?.id) {
     return;
   }
 
+  const conversationId = selectedConversation.id;
+
+  console.log(
+    "🟢 Starting realtime for conversation:",
+    conversationId
+  );
+
   const channel = frontendSupabase
-    .channel(`conversation-${selectedConversation.id}`)
+    .channel(`messages-${conversationId}`)
     .on(
       "postgres_changes",
       {
         event: "INSERT",
         schema: "public",
         table: "messages",
-        filter: `conversation_id=eq.${selectedConversation.id}`,
+        filter: `conversation_id=eq.${conversationId}`,
       },
       (payload) => {
+        console.log(
+          "🔥🔥 REALTIME MESSAGE RECEIVED:",
+          payload.new
+        );
+
         const newMessage = payload.new;
 
-        console.log("🔥 LIVE MESSAGE RECEIVED:", newMessage);
-
-        // Apne hi message ko dobara add mat karo
-        // kyunki handleSendMessage already add karta hai
+        // Apna message already UI me add ho chuka hai
         if (newMessage.sender_id === currentUser.id) {
           return;
         }
 
-        setMessages((previousMessages) => {
-          // Duplicate protection
-          const alreadyExists = previousMessages.some(
-            (message) => message.id === newMessage.id
+        setMessages((prev) => {
+          const exists = prev.some(
+            (msg) => msg.id === newMessage.id
           );
 
-          if (alreadyExists) {
-            return previousMessages;
+          if (exists) {
+            return prev;
           }
 
-          return [
-            ...previousMessages,
-            newMessage,
-          ];
+          return [...prev, newMessage];
         });
+
+        // Automatically bottom par scroll
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({
+            behavior: "smooth",
+          });
+        }, 100);
       }
     )
     .subscribe((status) => {
       console.log(
-        "🔥 MESSAGE REALTIME STATUS:",
+        "🔥🔥 REALTIME STATUS:",
         status
       );
     });
 
   return () => {
+    console.log(
+      "🔴 Removing realtime channel:",
+      conversationId
+    );
+
     frontendSupabase.removeChannel(channel);
   };
 }, [
   selectedConversation?.id,
   currentUser?.id,
-]);
+]); 
   // ======================================================
   // IMAGE SELECT
   // ======================================================
