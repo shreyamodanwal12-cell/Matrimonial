@@ -490,35 +490,56 @@ useEffect(() => {
 
 
 
-  // ======================================================
-  // SUPABASE REALTIME
-  // ======================================================
+// ======================================================
+// SUPABASE REALTIME - LIVE MESSAGES
+// ======================================================
 
 useEffect(() => {
-  if (!selectedConversation) {
+  if (!selectedConversation?.id || !currentUser?.id) {
     return;
   }
 
   const channel = frontendSupabase
-    .channel(`conversation-test-${selectedConversation.id}`)
+    .channel(`conversation-${selectedConversation.id}`)
     .on(
       "postgres_changes",
       {
-        event: "*",
+        event: "INSERT",
         schema: "public",
         table: "messages",
+        filter: `conversation_id=eq.${selectedConversation.id}`,
       },
       (payload) => {
-        console.log(
-          "🔥 REALTIME EVENT RECEIVED:",
-          payload
-        );
+        const newMessage = payload.new;
+
+        console.log("🔥 LIVE MESSAGE RECEIVED:", newMessage);
+
+        // Apne hi message ko dobara add mat karo
+        // kyunki handleSendMessage already add karta hai
+        if (newMessage.sender_id === currentUser.id) {
+          return;
+        }
+
+        setMessages((previousMessages) => {
+          // Duplicate protection
+          const alreadyExists = previousMessages.some(
+            (message) => message.id === newMessage.id
+          );
+
+          if (alreadyExists) {
+            return previousMessages;
+          }
+
+          return [
+            ...previousMessages,
+            newMessage,
+          ];
+        });
       }
     )
-
     .subscribe((status) => {
       console.log(
-        "🔥 TEST REALTIME STATUS:",
+        "🔥 MESSAGE REALTIME STATUS:",
         status
       );
     });
@@ -526,7 +547,10 @@ useEffect(() => {
   return () => {
     frontendSupabase.removeChannel(channel);
   };
-}, [selectedConversation?.id]);
+}, [
+  selectedConversation?.id,
+  currentUser?.id,
+]);
   // ======================================================
   // IMAGE SELECT
   // ======================================================
