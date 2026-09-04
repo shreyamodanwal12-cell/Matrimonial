@@ -2,9 +2,20 @@ import { useEffect, useState, useRef } from "react";
 import API_BASE_URL from "../../api/api";
 import frontendSupabase from "../../api/frontendSupabase";
 import EmojiPicker from "emoji-picker-react";
+
+
 function ChatPage() {
+  useEffect(() => {
+  const token = localStorage.getItem("token");
+
+  if (!token) return;
+
+  frontendSupabase.realtime.setAuth(token);
+
+  console.log("🔥 Supabase Realtime JWT set");
+}, []);
   
-  const [conversations, setConversations] = useState([]);
+  const [conversations, setConversations] =  useState([]);
   const [selectedConversation, setSelectedConversation] =
     useState(null);
 
