@@ -515,16 +515,21 @@ export const loginUser = async (req, res) => {
     // ======================================================
 
     const token = jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "7d",
-      }
-    );
+  {
+    id: user.id,
+    email: user.email,
+
+    // Supabase Realtime ke liye
+    role: "authenticated",
+
+    // Hamare application ka actual role
+    app_role: user.role,
+  },
+  process.env.JWT_SECRET,
+  {
+    expiresIn: "7d",
+  }
+);
 
     // ======================================================
     // LOGIN SUCCESS
