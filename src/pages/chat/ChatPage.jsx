@@ -515,6 +515,7 @@ useEffect(() => {
         );
       }
     )
+    
     .subscribe((status) => {
       console.log(
         "🔥 TEST REALTIME STATUS:",
