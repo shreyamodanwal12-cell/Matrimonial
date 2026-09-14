@@ -1,5 +1,7 @@
+import { useState } from "react";
 import API_BASE_URL from "../api/api";
 function ChoosePackage() {
+   const [alertMessage, setAlertMessage] = useState("");
   const packages = [
     {
       name: "Basic",
@@ -29,11 +31,10 @@ const handlePackageClick = async () => {
     // 1. Check login
     const token = localStorage.getItem("token");
 
-    if (!token) {
-      alert("Please login first to choose a membership plan.");
-      window.location.href = "/login";
-      return;
-    }
+   if (!token) {
+  setAlertMessage("Please login first to choose a membership plan.");
+  return;
+}
 
     // 2. Check Aadhaar
     const response = await fetch(
@@ -50,17 +51,17 @@ const handlePackageClick = async () => {
     console.log("Aadhaar Verification:", data);
 
     if (!response.ok || !data.success) {
-      alert(
-        data.message || "Unable to check Aadhaar verification."
-      );
+      setAlertMessage(
+  data.message || "Unable to check Aadhaar verification."
+);
       return;
     }
 
     // 3. Aadhaar not uploaded
     if (!data.isVerified) {
-      alert(
-        "Please complete your Aadhaar verification before choosing a membership plan."
-      );
+      setAlertMessage(
+  "Please complete your Aadhaar verification before choosing a membership plan."
+);
 
       return;
     }
@@ -71,13 +72,51 @@ const handlePackageClick = async () => {
   } catch (error) {
     console.error("Package Click Error:", error);
 
-    alert(
-      "Something went wrong while checking your verification."
-    );
+   setAlertMessage(
+  "Something went wrong while checking your verification."
+);
   }
 };
 
-  return (
+return (
+  <>
+    
+    {alertMessage && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+
+        <div className="w-full max-w-sm rounded-xl bg-white p-6 text-center shadow-2xl">
+
+          <h2 className="font-serif text-xl font-semibold text-[#751b17]">
+            Message
+          </h2>
+
+          <p className="mt-3 text-sm leading-6 text-[#806653]">
+            {alertMessage}
+          </p>
+
+         <button
+  type="button"
+  onClick={() => {
+    if (
+      alertMessage ===
+      "Please login first to choose a membership plan."
+    ) {
+      window.location.href = "/login";
+      return;
+    }
+
+    setAlertMessage("");
+  }}
+  className="mt-5 rounded-md bg-[#8c1d18] px-6 py-2 text-sm font-semibold text-white hover:bg-[#751712]"
+>
+  OK
+</button>
+
+        </div>
+
+      </div>
+    )}
+
     <section className="px-5 py-12 sm:px-8 lg:px-12">
 
       <div className="mx-auto max-w-[1100px]">
@@ -177,6 +216,7 @@ const handlePackageClick = async () => {
       </div>
 
     </section>
+    </>
   );
 }
 

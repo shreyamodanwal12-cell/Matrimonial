@@ -1,7 +1,75 @@
 import { useEffect, useState, useRef } from "react";
 import API_BASE_URL from "../../api/api";
 import frontendSupabase from "../../api/frontendSupabase";
+
 import EmojiPicker from "emoji-picker-react";
+
+// ======================================================
+// MODERN CHAT SVG ICONS
+// ======================================================
+
+const OnlineDot = ({ className = "" }) => (
+  <span
+    className={`inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white shadow-[0_0_0_3px_rgba(16,185,129,0.12)] ${className}`}
+    aria-label="Online"
+  />
+);
+
+const SentTick = ({ seen = false }) => (
+  <svg
+    viewBox="0 0 22 14"
+    className={`h-3.5 w-5 shrink-0 ${seen ? "text-sky-500" : "text-white/70"}`}
+    fill="none"
+    aria-label={seen ? "Seen" : "Sent"}
+  >
+    <path
+      d="M1.5 7.5 5.2 11 12.8 3"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    {seen && (
+      <path
+        d="M8.2 7.5 11.9 11 19.5 3"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    )}
+  </svg>
+);
+
+const EmptyChatIcon = () => (
+  <div className="relative mx-auto flex h-24 w-24 items-center justify-center rounded-[2rem] bg-gradient-to-br from-[#fff1e5] via-white to-[#f7dfcf] shadow-[0_15px_40px_rgba(117,27,23,0.10)] ring-1 ring-[#ead8c8]">
+    <svg viewBox="0 0 64 64" className="h-12 w-12 text-[#8b5e3c]" fill="none">
+      <path
+        d="M16 17.5h32A7.5 7.5 0 0 1 55.5 25v14A7.5 7.5 0 0 1 48 46.5H34l-9.5 7v-7H16A7.5 7.5 0 0 1 8.5 39V25a7.5 7.5 0 0 1 7.5-7.5Z"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinejoin="round"
+      />
+      <path d="M21 31h22M21 38h13" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+      <path d="M45 12.5v7M41.5 16h7" stroke="#b07b32" strokeWidth="2.5" strokeLinecap="round"/>
+    </svg>
+  </div>
+);
+
+const SendIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+    <path d="M21 3 10.5 13.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="m21 3-6.7 18-3.8-7.5L3 9.7 21 3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const CameraIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+    <path d="M4 7.5h3l1.5-2h7l1.5 2h3A2 2 0 0 1 22 9.5v9A2 2 0 0 1 20 20.5H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+    <circle cx="12" cy="14" r="3.5" stroke="currentColor" strokeWidth="1.8"/>
+  </svg>
+);
+
 
 
 function ChatPage() {
@@ -1034,20 +1102,20 @@ setSendingConversations((previous) => ({
   // ======================================================
 
   return (
-    <div className="min-h-screen bg-[#fffaf4] text-[#3c2415]">
+    <div className="min-h-screen bg-gradient-to-br from-[#fffaf4] via-[#fff7ef] to-[#f7eee7] text-[#3c2415]">
 
       {/* =================================================
           HEADER
       ================================================= */}
 
-      <header className="border-b border-[#ead8c8] bg-white px-4 py-4">
+      <header className="border-b border-[#ead8c8] bg-white/95 px-4 py-4 shadow-sm backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div>
-            <p className="text-[10px] uppercase tracking-[3px] text-[#a67c35]">
+            <p className="text-[10px] font-semibold uppercase tracking-[3px] text-[#b07b32]">
               Matrimonial
             </p>
 
-            <h1 className="font-serif text-2xl font-bold text-[#751b17]">
+            <h1 className="font-serif text-2xl font-bold tracking-tight text-[#751b17]">
               My Chats
             </h1>
           </div>
@@ -1058,7 +1126,7 @@ setSendingConversations((previous) => ({
               (window.location.href =
                 "/")
             }
-            className="rounded-md border border-[#8b5e3c] px-4 py-2 text-xs font-semibold text-[#8b5e3c] hover:bg-[#fff5ed]"
+            className="rounded-full border border-[#d8c2b2] bg-[#fffaf4] px-5 py-2 text-xs font-semibold text-[#8b5e3c] shadow-sm transition hover:-translate-y-0.5 hover:bg-[#fff5ed] hover:shadow"
           >
             Home
           </button>
@@ -1069,7 +1137,7 @@ setSendingConversations((previous) => ({
           CHAT AREA
       ================================================= */}
 
-      <main className="mx-auto flex h-[calc(100vh-90px)] max-w-7xl overflow-hidden bg-white">
+      <main className="mx-auto flex h-[calc(100vh-90px)] max-w-7xl overflow-hidden border-x border-[#ead8c8] bg-white shadow-[0_12px_40px_rgba(117,27,23,0.08)] md:my-4 md:h-[calc(100vh-122px)] md:rounded-3xl md:border">
 
         {/* =================================================
             LEFT CONVERSATION LIST
@@ -1080,10 +1148,10 @@ setSendingConversations((previous) => ({
             showMobileChat
               ? "hidden"
               : "block"
-          } w-full border-r border-[#ead8c8] md:block md:w-[340px]`}
+          } w-full border-r border-[#ead8c8] bg-[#fffdfb] md:block md:w-[350px]`}
         >
 
-          <div className="border-b border-[#ead8c8] p-4">
+          <div className="border-b border-[#ead8c8] bg-gradient-to-r from-[#fffaf4] to-white p-5">
             <h2 className="font-semibold text-[#563927]">
               Conversations
             </h2>
@@ -1097,9 +1165,7 @@ setSendingConversations((previous) => ({
             0 ? (
             <div className="p-8 text-center">
 
-              <div className="text-5xl">
-                💬
-              </div>
+              <EmptyChatIcon />
 
               <h3 className="mt-4 font-serif text-xl font-semibold text-[#751b17]">
                 No Chats Yet
@@ -1170,7 +1236,7 @@ if (isSending) {
     )
   );
 }}
-                      className={`w-full border-b border-[#f0e2d6] p-4 text-left transition hover:bg-[#fff7ef] ${
+                      className={`w-full border-b border-[#f0e2d6] p-3 text-left transition-all duration-200 hover:translate-x-0.5 hover:bg-[#fff7ef] ${
                         selectedConversation?.id ===
                         conversation.id
                           ? "bg-[#fff3e5]"
@@ -1195,10 +1261,10 @@ if (isSending) {
                                 .otherUser
                                 .full_name
                             }
-                            className="h-12 w-12 shrink-0 rounded-full border border-[#ead8c8] object-cover"
+                            className="h-12 w-12 shrink-0 rounded-full border-2 border-white object-cover shadow-sm ring-1 ring-[#ead8c8]"
                           />
                         ) : (
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#ead8c8] text-lg font-semibold text-[#8b5e3c]">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#ead8c8] to-[#f7dfc9] text-lg font-semibold text-[#8b5e3c] shadow-sm ring-1 ring-[#ead8c8]">
                             {conversation
                               .otherUser
                               ?.full_name
@@ -1275,9 +1341,7 @@ if (isSending) {
           {!selectedConversation ? (
             <div className="flex flex-1 items-center justify-center text-center text-gray-500">
               <div>
-                <div className="text-6xl">
-                  💬
-                </div>
+                <EmptyChatIcon />
 
                 <p className="mt-4">
                   Select a conversation
@@ -1325,7 +1389,7 @@ if (isSending) {
                       className="h-11 w-11 rounded-full border border-[#ead8c8] object-cover"
                     />
                   ) : (
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#ead8c8] font-semibold text-[#8b5e3c]">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[#ead8c8] to-[#f7dfc9] font-semibold text-[#8b5e3c] shadow-sm ring-1 ring-[#ead8c8]">
                       {selectedConversation
                         .otherUser
                         ?.full_name
@@ -1361,7 +1425,11 @@ if (isSending) {
   )}
                     </p>
                   </div>
-<div className="relative">
+<div
+  className="relative ml-auto"
+  onMouseEnter={() => setShowChatMenu(true)}
+  onMouseLeave={() => setShowChatMenu(false)}
+>
   <button
     type="button"
     onClick={() =>
@@ -1419,7 +1487,7 @@ if (isSending) {
                   MESSAGES
               ================================================= */}
 
-              <div className="flex-1 overflow-y-auto bg-[#fffaf4] p-4 sm:p-5">
+              <div className="flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.95),_transparent_45%),linear-gradient(135deg,#fffaf4,#f9eee5)] p-4 sm:p-6">
 
                 {messagesLoading ? (
                   <div className="flex h-full items-center justify-center text-sm text-gray-500">
@@ -1429,9 +1497,7 @@ if (isSending) {
                   0 ? (
                   <div className="flex h-full items-center justify-center text-center text-gray-500">
                     <div>
-                      <div className="text-5xl">
-                        ❤️
-                      </div>
+                      <EmptyChatIcon />
 
                       <p className="mt-3 text-sm">
                         Start your conversation
@@ -1439,7 +1505,7 @@ if (isSending) {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="mx-auto max-w-4xl space-y-3">
 
                     {messages.map(
                       (msg, index) => {
@@ -1465,8 +1531,8 @@ if (isSending) {
                             {/* DATE SEPARATOR */}
 
                             {showDate && (
-                              <div className="my-5 flex justify-center">
-                                <span className="rounded-full bg-[#ead8c8] px-4 py-1 text-[11px] font-medium text-[#70482f]">
+                              <div className="my-6 flex justify-center">
+                                <span className="rounded-full border border-[#ead8c8] bg-white/90 px-4 py-1 text-[11px] font-semibold text-[#70482f] shadow-sm backdrop-blur">
                                   {formatDateSeparator(
                                     msg.created_at
                                   )}
@@ -1499,7 +1565,7 @@ if (isSending) {
           className="h-7 w-7 shrink-0 rounded-full object-cover"
         />
       ) : (
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#ead8c8] text-[10px] font-semibold text-[#8b5e3c]">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#ead8c8] to-[#f7dfc9] text-[10px] font-semibold text-[#8b5e3c] shadow-sm">
           {selectedConversation?.otherUser?.full_name
             ?.charAt(0)
             ?.toUpperCase()}
@@ -1510,7 +1576,8 @@ if (isSending) {
 
   {/* MESSAGE + MENU */}
 
-  <div className="group relative flex items-start gap-1">
+  <div className="group relative flex items-start gap-1"  onMouseEnter={() => setMessageMenu(msg.id)}
+  onMouseLeave={() => setMessageMenu(null)}>
 
     {/* 3 DOT MENU */}
 
@@ -1534,10 +1601,10 @@ if (isSending) {
     {/* MESSAGE BUBBLE */}
 
     <div
-      className={`max-w-[80%] rounded-2xl px-3 py-2 shadow-sm sm:max-w-[65%] ${
+      className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 shadow-md transition sm:max-w-[65%] ${
         isMine
-          ? "rounded-br-md bg-[#8b5e3c] text-white"
-          : "rounded-bl-md border border-[#ead8c8] bg-white text-[#3c2415]"
+          ? "rounded-br-md bg-gradient-to-br from-[#8b5e3c] to-[#751b17] text-white shadow-[0_4px_14px_rgba(117,27,23,0.18)]"
+          : "rounded-bl-md border border-[#ead8c8] bg-white/95 text-[#3c2415] shadow-[0_4px_14px_rgba(60,36,21,0.06)]"
       }`}
     >
 
@@ -1572,17 +1639,7 @@ if (isSending) {
           {formatTime(msg.created_at)}
         </span>
 
-        {isMine && (
-          <span
-            className={
-              msg.is_read
-                ? "font-medium"
-                : ""
-            }
-          >
-            {msg.is_read ? "✓✓" : "✓"}
-          </span>
-        )}
+        {isMine && <SentTick seen={msg.is_read} />}
       </div>
 
     </div>
@@ -1650,14 +1707,14 @@ if (isSending) {
               ================================================= */}
 
               {imagePreview && (
-                <div className="border-t border-[#ead8c8] bg-white px-4 pt-3">
+                <div className="border-t border-[#ead8c8] bg-white/95 px-4 pt-3 shadow-[0_-8px_25px_rgba(117,27,23,0.04)] backdrop-blur">
 
                   <div className="relative inline-block">
 
                     <img
                       src={imagePreview}
                       alt="Selected"
-                      className="h-24 w-24 rounded-xl border border-[#ead8c8] object-cover"
+                      className="h-24 w-24 rounded-2xl border border-[#ead8c8] object-cover shadow-md"
                     />
 
                     <button
@@ -1679,7 +1736,7 @@ if (isSending) {
                   MESSAGE INPUT
               ================================================= */}
 
-             <div className="relative border-t border-[#ead8c8] bg-white p-3 sm:p-4">
+             <div className="relative border-t border-[#ead8c8] bg-white/95 p-3 sm:p-4 shadow-[0_-8px_25px_rgba(117,27,23,0.04)] backdrop-blur">
 
                 <div className="flex items-end gap-2">
 
@@ -1694,7 +1751,7 @@ if (isSending) {
                     title="Send image"
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#d8c2b2] text-xl text-[#8b5e3c] transition hover:bg-[#fff5ed] disabled:opacity-50"
                   >
-                    📷
+                    <CameraIcon />
                   </button>
 {/* EMOJI BUTTON */}
 <button
@@ -1753,7 +1810,7 @@ if (isSending) {
   rows={1}
   placeholder="Type a message..."
   disabled={sending}
-  className="max-h-28 min-h-[44px] flex-1 resize-none rounded-2xl border border-[#d8c2b2] px-4 py-3 text-sm outline-none focus:border-[#8b5e3c] disabled:bg-gray-50"
+  className="max-h-28 min-h-[44px] flex-1 resize-none rounded-2xl border border-[#d8c2b2] bg-[#fffdfb] px-4 py-3 text-sm outline-none shadow-inner transition focus:border-[#8b5e3c] focus:bg-white focus:ring-2 focus:ring-[#8b5e3c]/10 disabled:bg-gray-50"
 />
 
                   {/* SEND */}
@@ -1768,7 +1825,7 @@ if (isSending) {
                       (!messageText.trim() &&
                         !selectedImage)
                     }
-                    className="h-11 shrink-0 rounded-full bg-[#8b5e3c] px-5 text-sm font-semibold text-white transition hover:bg-[#70482f] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="h-11 shrink-0 rounded-full bg-gradient-to-r from-[#8b5e3c] to-[#751b17] px-6 text-sm font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {sending
                       ? "..."
@@ -1777,9 +1834,10 @@ if (isSending) {
 
                 </div>
 
-                <p className="mt-2 text-center text-[10px] text-gray-400">
-                  Images up to 5 MB • JPG,
-                  PNG or WEBP
+                <p className="mt-2 flex items-center justify-center gap-1 text-[10px] text-gray-400">
+                  <span className="h-1 w-1 rounded-full bg-[#b07b32]" />
+                  Images up to 5 MB • JPG, PNG or WEBP
+                  <span className="h-1 w-1 rounded-full bg-[#b07b32]" />
                 </p>
 
               </div>
@@ -1864,4 +1922,4 @@ if (isSending) {
   );
 }
 
-export default ChatPage;
+export default ChatPage;  

@@ -196,29 +196,37 @@ function PlansPage() {
   </p>
 </div>
 
-                {/* Features */}
-                <div className="space-y-3">
+               {/* Features */}
+<div className="mt-6">
 
-                  {plan.features.map((feature) => (
+  <p className="mb-4 text-[10px] font-semibold uppercase tracking-[2px] text-[#a67c35]">
+    Plan Features
+  </p>
 
-                    <div
-                      key={feature}
-                      className="flex items-start gap-2"
-                    >
+  <div className="space-y-3">
 
-                      <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#f7e8c9] text-[8px] font-bold text-[#8c1d18]">
-                        ✓
-                      </span>
+    {plan.features.map((feature) => (
 
-                      <span className="text-[9px] leading-4 text-[#604738]">
-                        {feature}
-                      </span>
+      <div
+        key={feature}
+        className="flex items-start gap-3"
+      >
 
-                    </div>
+        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#f7e8c9] text-[10px] font-bold text-[#8c1d18]">
+          ✓
+        </span>
 
-                  ))}
+        <span className="text-[11px] leading-5 text-[#604738]">
+          {feature}
+        </span>
 
-                </div>
+      </div>
+
+    ))}
+
+  </div>
+
+</div>
 
 
                 {/* Select */}
