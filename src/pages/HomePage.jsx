@@ -18,6 +18,7 @@ const [searchFilters, setSearchFilters] = useState({
   religion: "All Religions",
   location: "All Locations",
 });
+const [appliedFilters, setAppliedFilters] = useState(null);
   return (
     <div className="min-h-screen bg-[#fffaf4]">
 
@@ -28,12 +29,17 @@ const [searchFilters, setSearchFilters] = useState({
       </Reveal>
 
       <Reveal>
-       <SearchBox onSearch={setSearchFilters} />
+       <SearchBox
+  onSearch={(filters) => {
+    setSearchFilters(filters);
+    setAppliedFilters(filters);
+  }}
+/>
       </Reveal>
 
 
       <Reveal>
-        <FeaturedProfiles filters={searchFilters} />
+        <FeaturedProfiles filters={appliedFilters} />
       </Reveal>
 
       <Reveal>

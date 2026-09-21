@@ -141,90 +141,194 @@ console.log(
     profileLimit === Infinity ? data.profiles?.length || 0 : profileLimit
   )
 );
-      const allProfiles = data.profiles || [];
+      
 
-const filteredProfiles = allProfiles.filter((profile) => {
-  const matrimonial =
-    profile.matrimonial_profiles?.[0] ||
-    profile.matrimonial_profiles ||
-    {};
+const allProfiles = data.profiles || [];
 
-  // Gender filter
-  let genderMatch = true;
+let filteredProfiles = allProfiles;
 
-  if (filters?.lookingFor === "Bride") {
-    genderMatch = matrimonial.gender === "Female";
-  } else if (filters?.lookingFor === "Groom") {
-    genderMatch = matrimonial.gender === "Male";
-  }
+// --------------------------------
+// APPLY FILTERS ONLY AFTER SEARCH
+// --------------------------------
 
-  // Age filter
-  let ageMatch = true;
+if (filters) {
+  filteredProfiles = allProfiles.filter((profile) => {
+    const matrimonial =
+      profile.matrimonial_profiles?.[0] ||
+      profile.matrimonial_profiles ||
+      {};
 
-  if (matrimonial.birth_date && filters?.age) {
-    const age = calculateAge(matrimonial.birth_date);
+    // -------------------------
+    // GENDER
+    // -------------------------
 
-    switch (filters.age) {
-      case "18 - 25":
-        ageMatch = age >= 18 && age <= 25;
-        break;
+    let genderMatch = true;
 
-      case "25 - 30":
-        ageMatch = age > 25 && age <= 30;
-        break;
-
-      case "30 - 35":
-        ageMatch = age > 30 && age <= 35;
-        break;
-
-      case "35 - 40":
-        ageMatch = age > 35 && age <= 40;
-        break;
-
-      case "40+":
-        ageMatch = age >= 40;
-        break;
-
-      default:
-        ageMatch = true;
+    if (filters.lookingFor === "Bride") {
+      genderMatch = matrimonial.gender === "Female";
     }
-  }
 
-  // Location filter
-  let locationMatch = true;
+    if (filters.lookingFor === "Groom") {
+      genderMatch = matrimonial.gender === "Male";
+    }
 
-  if (filters?.location !== "All Locations") {
-    const selectedLocation = filters.location.toLowerCase();
+    // -------------------------
+    // AGE
+    // -------------------------
 
-    const state = (matrimonial.state || "").toLowerCase();
-    const nativePlace = (matrimonial.native_place || "").toLowerCase();
+    let ageMatch = true;
 
-    const workLocation = (
-      profile.education_details?.work_location || ""
-    ).toLowerCase();
+    if (
+      filters.age &&
+      matrimonial.birth_date
+    ) {
+      const today = new Date();
+      const birth = new Date(
+        matrimonial.birth_date
+      );
 
-    locationMatch =
-      state.includes(selectedLocation) ||
-      nativePlace.includes(selectedLocation) ||
-      workLocation.includes(selectedLocation);
-  }
+      let age =
+        today.getFullYear() -
+        birth.getFullYear();
 
-  // Religion abhi skip kar rahe hain
-  // Kyunki API data me religion field nahi aa rahi.
+      const monthDifference =
+        today.getMonth() -
+        birth.getMonth();
 
-  return genderMatch && ageMatch && locationMatch;
-});
+      if (
+        monthDifference < 0 ||
+        (monthDifference === 0 &&
+          today.getDate() < birth.getDate())
+      ) {
+        age--;
+      }
 
-console.log("Filtered Profiles:", filteredProfiles);
+      switch (filters.age) {
+        case "18 - 25":
+          ageMatch =
+            age >= 18 && age <= 25;
+          break;
+
+        case "25 - 30":
+          ageMatch =
+            age > 25 && age <= 30;
+          break;
+
+        case "30 - 35":
+          ageMatch =
+            age > 30 && age <= 35;
+          break;
+
+        case "35 - 40":
+          ageMatch =
+            age > 35 && age <= 40;
+          break;
+
+        case "40+":
+          ageMatch = age >= 40;
+          break;
+
+        default:
+          ageMatch = true;
+      }
+    }
+
+    // -------------------------
+    // LOCATION
+    // -------------------------
+
+    let locationMatch = true;
+
+    if (
+      filters.location &&
+      filters.location !== "All Locations"
+    ) {
+      const selectedLocation =
+        filters.location.toLowerCase();
+
+      const state =
+        (
+          matrimonial.state || ""
+        ).toLowerCase();
+
+      const nativePlace =
+        (
+          matrimonial.native_place || ""
+        ).toLowerCase();
+
+      const workLocation =
+        (
+          profile.education_details
+            ?.work_location || ""
+        ).toLowerCase();
+
+      locationMatch =
+        state.includes(selectedLocation) ||
+        nativePlace.includes(selectedLocation) ||
+        workLocation.includes(selectedLocation);
+    }
+
+    return (
+      genderMatch &&
+      ageMatch &&
+      locationMatch
+    );
+  });
+}
+
+// --------------------------------
+// NO SEARCH = SHOW ALL PROFILES
+// SEARCH = SHOW FILTERED PROFILES
+// --------------------------------
+
+console.log(
+  "Profiles Before Filter:",
+  allProfiles.length
+);
+
+console.log(
+  "Profiles After Filter:",
+  filteredProfiles.length
+);
+
+// --------------------------------
+// NO MATCH FOUND
+// --------------------------------
+
+if (
+  filters &&
+  filteredProfiles.length === 0
+) {
+  alert(
+    "No profiles found matching your search criteria."
+  );
+
+  // Search result ke bad blank nahi hoga
+  // Saari profiles wapas dikha denge
+  filteredProfiles = allProfiles;
+}
+
+// --------------------------------
+// MEMBERSHIP LIMIT
+// --------------------------------
 
 const visibleProfiles =
   profileLimit === Infinity
     ? filteredProfiles
-    : filteredProfiles.slice(0, profileLimit);
+    : filteredProfiles.slice(
+        0,
+        profileLimit
+      );
 
-console.log("Final Profiles Shown:", visibleProfiles.length);
+console.log(
+  "Final Profiles Shown:",
+  visibleProfiles.length
+);
 
 setProfiles(visibleProfiles);
+
+console.log("Filtered Profiles:", filteredProfiles);
+
     } 
     catch (error) {
       console.error(
