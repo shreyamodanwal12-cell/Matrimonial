@@ -65,8 +65,8 @@ function LifestylePage() {
 
     // Send all 4 steps to backend
     const response = await fetch(
-      "http://localhost:5000/api/auth/register",
-      {
+  "https://matrimonial-backend-drab.vercel.app/api/auth/register",
+  {
         method: "POST",
 
         headers: {
