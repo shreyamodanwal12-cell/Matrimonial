@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import API_BASE_URL from "../api/api";
 
-function FeaturedProfiles() {
+function FeaturedProfiles({ filters }) {
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [hasMembership, setHasMembership] = useState(false);
 
   useEffect(() => {
-    checkMembershipAndFetchProfiles();
-  }, []);
+  checkMembershipAndFetchProfiles();
+}, [filters]);
 
   const checkMembershipAndFetchProfiles = async () => {
     try {
@@ -143,10 +143,84 @@ console.log(
 );
       const allProfiles = data.profiles || [];
 
+const filteredProfiles = allProfiles.filter((profile) => {
+  const matrimonial =
+    profile.matrimonial_profiles?.[0] ||
+    profile.matrimonial_profiles ||
+    {};
+
+  // Gender filter
+  let genderMatch = true;
+
+  if (filters?.lookingFor === "Bride") {
+    genderMatch = matrimonial.gender === "Female";
+  } else if (filters?.lookingFor === "Groom") {
+    genderMatch = matrimonial.gender === "Male";
+  }
+
+  // Age filter
+  let ageMatch = true;
+
+  if (matrimonial.birth_date && filters?.age) {
+    const age = calculateAge(matrimonial.birth_date);
+
+    switch (filters.age) {
+      case "18 - 25":
+        ageMatch = age >= 18 && age <= 25;
+        break;
+
+      case "25 - 30":
+        ageMatch = age > 25 && age <= 30;
+        break;
+
+      case "30 - 35":
+        ageMatch = age > 30 && age <= 35;
+        break;
+
+      case "35 - 40":
+        ageMatch = age > 35 && age <= 40;
+        break;
+
+      case "40+":
+        ageMatch = age >= 40;
+        break;
+
+      default:
+        ageMatch = true;
+    }
+  }
+
+  // Location filter
+  let locationMatch = true;
+
+  if (filters?.location !== "All Locations") {
+    const selectedLocation = filters.location.toLowerCase();
+
+    const state = (matrimonial.state || "").toLowerCase();
+    const nativePlace = (matrimonial.native_place || "").toLowerCase();
+
+    const workLocation = (
+      profile.education_details?.work_location || ""
+    ).toLowerCase();
+
+    locationMatch =
+      state.includes(selectedLocation) ||
+      nativePlace.includes(selectedLocation) ||
+      workLocation.includes(selectedLocation);
+  }
+
+  // Religion abhi skip kar rahe hain
+  // Kyunki API data me religion field nahi aa rahi.
+
+  return genderMatch && ageMatch && locationMatch;
+});
+
+console.log("Filtered Profiles:", filteredProfiles);
+
 const visibleProfiles =
   profileLimit === Infinity
-    ? allProfiles
-    : allProfiles.slice(0, profileLimit);
+    ? filteredProfiles
+    : filteredProfiles.slice(0, profileLimit);
 
 console.log("Final Profiles Shown:", visibleProfiles.length);
 

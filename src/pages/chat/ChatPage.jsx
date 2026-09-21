@@ -1128,7 +1128,7 @@ setSendingConversations((previous) => ({
             }
             className="rounded-full border border-[#d8c2b2] bg-[#fffaf4] px-5 py-2 text-xs font-semibold text-[#8b5e3c] shadow-sm transition hover:-translate-y-0.5 hover:bg-[#fff5ed] hover:shadow"
           >
-            Home
+            Back
           </button>
         </div>
       </header>

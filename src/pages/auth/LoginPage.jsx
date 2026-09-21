@@ -188,7 +188,16 @@ window.location.href = "/aadhaar-verification";
 
   return (
     <div className="min-h-screen bg-[#fff0b9]">
-
+<div className="px-4 pt-5">
+  <button
+    type="button"
+    onClick={() => window.history.back()}
+    className="inline-flex items-center gap-2 rounded-xl border border-[#eadfce] bg-white px-4 py-2.5 text-sm font-semibold text-[#563927] shadow-sm transition hover:bg-[#fff5e8] hover:shadow-md"
+  >
+    <span className="text-lg leading-none">←</span>
+    <span>Back</span>
+  </button>
+</div>
       {/* Top Brand Area */}
       <div className="px-4 pb-6 pt-9 text-center">
 

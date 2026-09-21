@@ -12,7 +12,12 @@ import Reveal from "../components/Reveal";
 import ChoosePackage from "../components/ChoosePackage";
 function HomePage() {
   const [showPopup, setShowPopup] = useState(true);
-
+const [searchFilters, setSearchFilters] = useState({
+  lookingFor: "Bride",
+  age: "18 - 25",
+  religion: "All Religions",
+  location: "All Locations",
+});
   return (
     <div className="min-h-screen bg-[#fffaf4]">
 
@@ -23,12 +28,12 @@ function HomePage() {
       </Reveal>
 
       <Reveal>
-        <SearchBox />
+       <SearchBox onSearch={setSearchFilters} />
       </Reveal>
 
 
       <Reveal>
-        <FeaturedProfiles />
+        <FeaturedProfiles filters={searchFilters} />
       </Reveal>
 
       <Reveal>

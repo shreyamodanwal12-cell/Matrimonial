@@ -118,7 +118,13 @@ useEffect(() => {
           >
             Contact
           </a>
-
+<a
+  href="/chat"
+  className="block px-4 py-2 text-[13px] text-[#563927] hover:bg-[#fff5e8]"
+  onClick={() => setAccountOpen(false)}
+>
+  💬 Chat
+</a>
 
 
 

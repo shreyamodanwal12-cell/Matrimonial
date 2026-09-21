@@ -1,4 +1,11 @@
-function SearchBox() {
+import { useState } from "react";
+function SearchBox({ onSearch }) {
+  const [filters, setFilters] = useState({
+  lookingFor: "Bride",
+  age: "18 - 25",
+  religion: "All Religions",
+  location: "All Locations",
+});
   return (
     <section className="relative z-20 -mt-12 px-4">
       <div className="mx-auto max-w-[1050px]">
@@ -38,8 +45,11 @@ function SearchBox() {
                   transition
                   focus:border-[#9b261f]
                   focus:ring-2
-                  focus:ring-[#9b261f]/10
-                "
+                  focus:ring-[#9b261f]/10 
+                " value={filters.lookingFor}
+onChange={(e) =>
+  setFilters({ ...filters, lookingFor: e.target.value })
+}
               >
                 <option>Bride</option>
                 <option>Groom</option>
@@ -68,7 +78,12 @@ function SearchBox() {
                   focus:border-[#9b261f]
                   focus:ring-2
                   focus:ring-[#9b261f]/10
-                "
+                " 
+  value={filters.age}
+  onChange={(e) =>
+    setFilters({ ...filters, age: e.target.value })
+  }
+
               >
                 <option>18 - 25</option>
                 <option>25 - 30</option>
@@ -100,7 +115,12 @@ function SearchBox() {
                   focus:border-[#9b261f]
                   focus:ring-2
                   focus:ring-[#9b261f]/10
-                "
+                " 
+  value={filters.religion}
+  onChange={(e) =>
+    setFilters({ ...filters, religion: e.target.value })
+  }
+
               >
                 <option>All Religions</option>
                 <option>Hindu</option>
@@ -133,7 +153,10 @@ function SearchBox() {
                   focus:border-[#9b261f]
                   focus:ring-2
                   focus:ring-[#9b261f]/10
-                "
+                " value={filters.location}
+  onChange={(e) =>
+    setFilters({ ...filters, location: e.target.value })
+  }
               >
                 <option>All Locations</option>
                 <option>Gulbarga</option>
@@ -148,6 +171,7 @@ function SearchBox() {
 
               <button
                 type="button"
+                onClick={() => onSearch(filters)}
                 className="
                   flex
                   h-10
