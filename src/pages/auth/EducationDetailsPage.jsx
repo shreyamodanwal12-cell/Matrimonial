@@ -709,7 +709,7 @@ value={formData.annual_income}
                 CAREER DESCRIPTION
             ================================================== */}
 
-            <div>
+            {/* <div>
 
               <h3 className="text-[12px] font-semibold text-[#d9272e] mb-3">
                 Career Description
@@ -731,7 +731,7 @@ value={formData.annual_income}
                 Keep it simple and genuine.
               </p>
 
-            </div>
+            </div> */}
 
 
             {/* =================================================
