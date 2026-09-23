@@ -11,7 +11,7 @@ import interestRoutes from "./routes/interestRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
 const app = express();
 ;
-app.use(
+app.use( 
   cors({
     origin: [
       "http://localhost:5173",
