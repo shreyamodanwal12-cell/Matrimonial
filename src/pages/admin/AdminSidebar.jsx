@@ -32,6 +32,11 @@ function AdminSidebar() {
       path: "/admin/matches",
     },
     {
+  label: "Chat",
+  icon: "💬",
+  path: "/admin/chat",
+},
+    {
       label: "Reports",
       icon: "📊",
       path: "/admin/reports",

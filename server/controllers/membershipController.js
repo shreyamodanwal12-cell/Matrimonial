@@ -45,7 +45,64 @@ export const getMyMembership = async (req, res) => {
 
       const expiryDate =
         new Date(membership.end_date);
+// ==========================================
+// MEMBERSHIP EXPIRING SOON NOTIFICATION
+// ==========================================
 
+if (membership.status === "ACTIVE") {
+
+  const timeDifference =
+    expiryDate.getTime() - now.getTime();
+
+  const daysRemaining =
+    timeDifference / (1000 * 60 * 60 * 24);
+
+  if (daysRemaining > 0 && daysRemaining <= 3) {
+
+    const { data: existingNotification, error: notificationCheckError } =
+      await supabase
+        .from("notifications")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("type", "membership_expiring")
+        .eq(
+          "message",
+          `Your ${membership.plan_name} membership will expire soon.`
+        )
+        .maybeSingle();
+
+    if (notificationCheckError) {
+
+      console.error(
+        "Membership Expiring Notification Check Error:",
+        notificationCheckError
+      );
+
+    } else if (!existingNotification) {
+
+      const { error: notificationError } =
+        await supabase
+          .from("notifications")
+          .insert({
+            user_id: userId,
+            type: "membership_expiring",
+            title: "Membership Expiring Soon",
+            message: `Your ${membership.plan_name} membership will expire soon.`,
+            related_user_id: userId,
+            is_read: false,
+          });
+
+      if (notificationError) {
+
+        console.error(
+          "Membership Expiring Notification Error:",
+          notificationError
+        );
+
+      }
+    }
+  }
+}
 
       if (
         membership.status === "ACTIVE" &&
@@ -67,16 +124,60 @@ export const getMyMembership = async (req, res) => {
 
         if (updateError) {
 
-          console.error(
-            "Membership Expiry Update Error:",
-            updateError
-          );
+  console.error(
+    "Membership Expiry Update Error:",
+    updateError
+  );
 
-        } else {
+} else {
 
-          membership.status =
-            updatedMembership.status;
-        }
+  membership.status =
+    updatedMembership.status;
+
+  // ==========================================
+  // MEMBERSHIP EXPIRY NOTIFICATION
+  // ==========================================
+
+  const { data: existingNotification, error: notificationCheckError } =
+    await supabase
+      .from("notifications")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("type", "membership_expired")
+      .eq("message", `Your ${membership.plan_name} membership has expired.`)
+      .maybeSingle();
+
+  if (notificationCheckError) {
+
+    console.error(
+      "Membership Notification Check Error:",
+      notificationCheckError
+    );
+
+  } else if (!existingNotification) {
+
+    const { error: notificationError } =
+      await supabase
+        .from("notifications")
+        .insert({
+          user_id: userId,
+          type: "membership_expired",
+          title: "Membership Expired",
+          message: `Your ${membership.plan_name} membership has expired.`,
+          related_user_id: userId,
+          is_read: false,
+        });
+
+    if (notificationError) {
+
+      console.error(
+        "Membership Expiry Notification Error:",
+        notificationError
+      );
+
+    }
+  }
+}
       }
     }
 

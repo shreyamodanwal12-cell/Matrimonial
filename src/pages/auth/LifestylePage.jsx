@@ -1,5 +1,5 @@
 import { useState } from "react";
-
+import API_BASE_URL from "../../api/api";
 const inputClass =
   "w-full h-[36px] px-3 rounded-[6px] border border-[#f2c65c] bg-white text-[11px] text-[#4b4b4b] placeholder:text-[#a6a6a6] outline-none focus:border-[#d9272e] focus:ring-1 focus:ring-[#d9272e]/15 transition";
 
@@ -65,7 +65,7 @@ function LifestylePage() {
 
     // Send all 4 steps to backend
     const response = await fetch(
-  "https://matrimonial-backend-drab.vercel.app/api/auth/register",
+  `${API_BASE_URL}/api/auth/register`,
   {
         method: "POST",
 
@@ -84,15 +84,34 @@ function LifestylePage() {
 
     const data = await response.json();
 
-    if (!response.ok) {
-      alert(data.message || "Registration failed.");
-      return;
-    }
+   if (!response.ok) {
+  if (
+    data.message?.toLowerCase().includes("email") &&
+    (
+      data.message?.toLowerCase().includes("already") ||
+      data.message?.toLowerCase().includes("exist") ||
+      data.message?.toLowerCase().includes("registered")
+    )
+  ) {
+    alert("This email is already registered. Please use another email.");
+  } else {
+    alert(data.message || "Registration failed.");
+  }
+
+  return;
+}
 
     console.log("Registration Response:", data);
+    console.log("Registration Token:", data.token);
 
-    // Registration completed
-   alert("Registration completed successfully!");
+// Save temporary token for Aadhaar upload
+localStorage.setItem("token", data.token);
+localStorage.setItem("user", JSON.stringify(data.user));
+
+// Registration completed
+alert(
+  "Registration completed successfully! Please complete Aadhaar verification."
+);
 
 // Remove temporary registration data
 localStorage.removeItem("registrationStep1");
@@ -101,7 +120,7 @@ localStorage.removeItem("registrationStep3");
 localStorage.removeItem("registrationStep4");
 
 // Go to Aadhaar verification page
-window.location.href = "/login";
+window.location.href = "/aadhaar-verification";
 
   } catch (error) {
     console.error("Registration Error:", error);

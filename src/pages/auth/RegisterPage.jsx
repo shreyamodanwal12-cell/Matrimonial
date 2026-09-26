@@ -1,4 +1,5 @@
 import { useState } from "react";
+import API_BASE_URL from "../../api/api";
 
 const inputClass =
   "w-full h-[36px] px-3 rounded-[6px] border border-[#f2c65c] bg-white text-[11px] text-[#4b4b4b] placeholder:text-[#a6a6a6] outline-none focus:border-[#d9272e] focus:ring-1 focus:ring-[#d9272e]/15 transition";
@@ -42,14 +43,54 @@ function RegisterPage() {
     }));
   };
 
-  const handleSubmit = (e) => {
+const handleSubmit = async (e) => {
   e.preventDefault();
 
-  console.log("Register Data:", formData);
+  try {
+    // Check mobile number
+    const response = await fetch(
+      `${API_BASE_URL}/api/auth/check-mobile`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          mobile: formData.contactNumber,
+        }),
+      }
+    );
 
-  localStorage.setItem("registrationStep1", JSON.stringify(formData));
+    const data = await response.json();
 
-  window.location.href = "/register/family";
+    // Duplicate mobile number
+    if (response.status === 409) {
+      alert(data.message);
+      return;
+    }
+
+    // Other server error
+    if (!response.ok) {
+      alert(data.message || "Unable to check mobile number.");
+      return;
+    }
+
+    // Mobile available → continue
+    console.log("Register Data:", formData);
+
+    localStorage.setItem(
+      "registrationStep1",
+      JSON.stringify(formData)
+    );
+
+    window.location.href = "/register/family";
+
+  } 
+   catch (error) {
+  console.error("Mobile check error:", error);
+
+  alert(error.message);
+}
 };
 
   return (

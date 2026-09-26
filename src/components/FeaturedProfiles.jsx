@@ -55,63 +55,70 @@ const membership = memberships[0];
 // --------------------------------
 // PROFILE LIMIT CHECK
 // --------------------------------
-if (!membership) {
-  setHasMembership(false);
-  setProfiles([]);
-  setLoading(false);
-  return;
-}
+
 let profileLimit;
 
-if (membership.plan_name === "Basic") {
+// FREE USER
+if (!membership) {
+  profileLimit = 5;
+
+  console.log("User Plan: Free");
+  console.log("Allowed Profile Limit:", profileLimit);
+}
+
+// PAID USER
+else if (membership.plan_name === "Basic") {
   profileLimit = 10;
-} else if (membership.plan_name === "Premium") {
+}
+
+else if (membership.plan_name === "Premium") {
   profileLimit = 50;
-} else if (membership.plan_name === "Royal") {
+}
+
+else if (membership.plan_name === "Royal") {
   profileLimit = Infinity;
 }
 
-console.log("User Plan:", membership.plan_name);
+else {
+  profileLimit = 5;
+}
+
+console.log(
+  "User Plan:",
+  membership ? membership.plan_name : "Free"
+);
 console.log("Allowed Profile Limit:", profileLimit);
+
 // --------------------------------
-// NO MEMBERSHIP
+// CHECK PAID MEMBERSHIP STATUS
 // --------------------------------
-if (
-  !membershipResponse.ok ||
-  !membershipData.success ||
-  !membership
-) {
-  setHasMembership(false);
-  setProfiles([]);
-  setLoading(false);
-  return;
+
+if (membership) {
+  const membershipStatus =
+    membership.status?.toUpperCase();
+
+  const expiryDate = membership.end_date
+    ? new Date(membership.end_date)
+    : null;
+
+  const isActive =
+    membershipStatus === "ACTIVE" &&
+    expiryDate &&
+    expiryDate >= new Date();
+
+  // Paid membership expired/inactive
+  if (!isActive) {
+    // Treat user as FREE user
+    profileLimit = 5;
+    console.log("Membership expired/inactive");
+    console.log("Free Profile Limit:", profileLimit);
+  }
 }
 
 // --------------------------------
-// CHECK ACTIVE MEMBERSHIP
+// USER CAN VIEW PROFILES
 // --------------------------------
-const membershipStatus =
-  membership.status?.toUpperCase();
 
-const expiryDate = membership.end_date
-  ? new Date(membership.end_date)
-  : null;
-
-const isActive =
-  membershipStatus === "ACTIVE" &&
-  expiryDate &&
-  expiryDate >= new Date();
-
-if (!isActive) {
-  setHasMembership(false);
-  setProfiles([]);
-  setLoading(false);
-  return;
-}
-
-// --------------------------------
-// MEMBERSHIP ACTIVE
-// --------------------------------
 setHasMembership(true);
 
       // --------------------------------
@@ -379,12 +386,7 @@ console.log("Filtered Profiles:", filteredProfiles);
   return null;
 }
 
-  // --------------------------------
-  // NO MEMBERSHIP
-  // --------------------------------
-  if (!hasMembership) {
-    return null;
-  }
+  
 
   // --------------------------------
   // ERROR

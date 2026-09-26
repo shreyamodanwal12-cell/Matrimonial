@@ -5,7 +5,8 @@ function MyInterestsPage() {
   const [interests, setInterests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
+const [sendingMarriageRequest, setSendingMarriageRequest] =
+  useState(null);
   useEffect(() => {
     fetchMyInterests();
   }, []);
@@ -82,7 +83,54 @@ function MyInterestsPage() {
 
     return "⏳ Pending";
   };
+const handleMarriageRequest = async (interest) => {
+  try {
+    const token = localStorage.getItem("token");
 
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
+    setSendingMarriageRequest(interest.id);
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/interests/${interest.id}/marriage-request`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      alert(
+        data.message ||
+          "Unable to send marriage finalization request."
+      );
+      return;
+    }
+
+    alert(
+      "Marriage finalization request sent to Admin successfully."
+    );
+  } catch (error) {
+    console.error(
+      "Marriage request error:",
+      error
+    );
+
+    alert(
+      "Something went wrong while sending the marriage request."
+    );
+  } finally {
+    setSendingMarriageRequest(null);
+  }
+};
   const handleChat = async (interest) => {
     try {
       const token = localStorage.getItem("token");
@@ -288,17 +336,31 @@ function MyInterestsPage() {
                     {/* ACTION */}
                     <div className="shrink-0">
 
-                      {isAccepted ? (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleChat(interest)
-                          }
-                          className="w-full rounded-md bg-[#8c1d18] px-5 py-3 text-xs font-semibold text-white transition hover:bg-[#751712] sm:w-[130px]"
-                        >
-                          💬 Chat
-                        </button>
-                      ) : normalizedStatus ===
+                     {isAccepted ? (
+  <div className="flex flex-col gap-2">
+
+    <button
+      type="button"
+      onClick={() => handleChat(interest)}
+      className="w-full rounded-md bg-[#8c1d18] px-5 py-3 text-xs font-semibold text-white transition hover:bg-[#751712] sm:w-[150px]"
+    >
+      💬 Chat
+    </button>
+
+    <button
+      type="button"
+      onClick={() => handleMarriageRequest(interest)}
+      disabled={sendingMarriageRequest === interest.id}
+      className="w-full rounded-md border border-[#c58a25] bg-[#fffaf2] px-5 py-3 text-xs font-semibold text-[#8c1d18] transition hover:bg-[#fff3df] disabled:cursor-not-allowed disabled:opacity-60 sm:w-[150px]"
+    >
+      {sendingMarriageRequest === interest.id
+        ? "Sending..."
+        : "💍 Marriage Request"}
+    </button>
+
+  </div>
+)
+                       : normalizedStatus ===
                         "rejected" ? (
                         <span className="text-xs text-[#806653]">
                           Request rejected

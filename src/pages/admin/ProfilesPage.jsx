@@ -5,7 +5,7 @@ function ProfilesPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
   const [selectedProfile, setSelectedProfile] = useState(null);
-
+  const [selectedMembership, setSelectedMembership] = useState(null);
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -99,7 +99,93 @@ const updateProfileStatus = async (profileId, newStatus) => {
     setUpdatingStatus(false);
   }
 };
+const updateAadharVerification = async (
+  profileId,
+  verificationStatus,
+  verificationNote = ""
+) => {
+  try {
+    setUpdatingStatus(true);
 
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/profiles/${profileId}/aadhaar-verification`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          verification_status: verificationStatus,
+          verification_note: verificationNote,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(
+        data.message || "Unable to update Aadhaar verification"
+      );
+    }
+
+    // Update Aadhaar status in frontend
+    setProfiles((prevProfiles) =>
+      prevProfiles.map((profile) =>
+        profile.id === profileId
+          ? {
+              ...profile,
+              profile_documents: {
+                ...profile.profile_documents,
+                verification_status: verificationStatus,
+                verification_note:
+                  verificationNote || null,
+                verified_at:
+                  verificationStatus === "Approved"
+                    ? new Date().toISOString()
+                    : null,
+              },
+            }
+          : profile
+      )
+    );
+
+    // Update selected profile also
+    setSelectedProfile((prev) =>
+      prev
+        ? {
+            ...prev,
+            profile_documents: {
+              ...prev.profile_documents,
+              verification_status: verificationStatus,
+              verification_note:
+                verificationNote || null,
+              verified_at:
+                verificationStatus === "Approved"
+                  ? new Date().toISOString()
+                  : null,
+            },
+          }
+        : prev
+    );
+
+  } catch (error) {
+    console.error(
+      "Update Aadhaar verification error:",
+      error
+    );
+
+    setError(
+      error.message ||
+        "Unable to update Aadhaar verification"
+    );
+  } finally {
+    setUpdatingStatus(false);
+  }
+};
 const pendingCount = profiles.filter(
   (profile) => profile.profile_status === "Pending"
 ).length;
@@ -216,6 +302,7 @@ const filteredProfiles = profiles.filter((profile) => {
             <p className="mt-1 text-[8px] text-[#9a806f]">
               Profiles waiting for approval
             </p>
+            
           </div>
 
           <div className="rounded-xl border border-[#eadfce] bg-white p-5">
@@ -332,7 +419,9 @@ const filteredProfiles = profiles.filter((profile) => {
                   <th className="px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
                     Status
                   </th>
-
+<th className="px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
+  Membership
+</th>
                   <th className="px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[1px] text-[#9a806f]">
                     Action
                   </th>
@@ -440,7 +529,41 @@ const filteredProfiles = profiles.filter((profile) => {
 
                     </td>
 
+{/* Membership */}
+<td className="px-4 py-4">
+  {profile.memberships?.length > 0 ? (
+    <button
+      type="button"
+     onClick={() => {
+  const paidPayment =
+    profile.payments?.find((p) =>
+      ["paid", "completed"].includes(
+        String(p.payment_status || "").toLowerCase()
+      )
+    ) || profile.payments?.[0] || null;
 
+  setSelectedMembership({
+    profile,
+    membership: profile.memberships?.[0] || null,
+    payment: paidPayment,
+  });
+}}
+      className={`rounded-full px-2.5 py-1 text-[8px] font-semibold ${
+        profile.memberships[0]?.plan_name === "Royal"
+          ? "bg-[#f3e8ff] text-[#7e22ce]"
+          : profile.memberships[0]?.plan_name === "Premium"
+            ? "bg-[#fff1d8] text-[#b36b11]"
+            : "bg-[#e7f6ed] text-[#287b51]"
+      }`}
+    >
+      {profile.memberships[0]?.plan_name}
+    </button>
+  ) : (
+    <span className="rounded-full bg-[#f8e3e3] px-2.5 py-1 text-[8px] font-semibold text-[#b63b3b]">
+      No Membership
+    </span>
+  )}
+</td>
                     {/* Action */}
                     <td className="px-4 py-4">
 
@@ -525,7 +648,54 @@ const filteredProfiles = profiles.filter((profile) => {
                   <p className="mt-1 text-[8px] text-[#9a806f]">
                     {profile.education}
                   </p>
+{/* Membership */}
+<div className="mt-2 flex items-center justify-between">
 
+  <p className="text-[8px] text-[#806653]">
+    Membership
+  </p>
+
+  {profile.memberships?.length > 0 ? (
+    <button
+      type="button"
+      onClick={() => {
+  console.log("Payments for this profile:", profile.payments);
+
+  const paidPayment =
+    profile.payments?.find((p) =>
+      ["paid", "completed"].includes(
+        String(p.payment_status || "").toLowerCase()
+      )
+    ) || null;
+
+  console.log(
+  "Selected Paid Payment JSON:",
+  JSON.stringify(paidPayment, null, 2)
+);
+
+  setSelectedMembership({
+    profile,
+    membership: profile.memberships?.[0] || null,
+    payment: paidPayment,
+  });
+}}
+      className={`rounded-full px-2.5 py-1 text-[8px] font-semibold ${
+        profile.memberships[0]?.plan_name === "Royal"
+          ? "bg-[#f3e8ff] text-[#7e22ce]"
+          : profile.memberships[0]?.plan_name === "Premium"
+            ? "bg-[#fff1d8] text-[#b36b11]"
+            : "bg-[#e7f6ed] text-[#287b51]"
+      }`}
+    >
+      {profile.memberships[0]?.plan_name}
+    </button>
+  ) : (
+    <span className="rounded-full bg-[#f8e3e3] px-2.5 py-1 text-[8px] font-semibold text-[#b63b3b]">
+      No Membership
+    </span>
+  )}
+
+</div>
                 </div>
 
 
@@ -919,7 +1089,35 @@ const filteredProfiles = profiles.filter((profile) => {
 
   </div>
 
-  {/* Aadhaar */}
+ {/* Aadhaar */}
+<div className="mt-4 rounded-lg border border-[#eadfce] bg-[#fffaf5] p-4">
+
+  <p className="text-[8px] uppercase tracking-[1px] text-[#a67c35]">
+    Aadhaar Verification
+  </p>
+
+  {/* Aadhaar Status */}
+  <div className="mt-3">
+
+    <p className="text-[8px] text-[#9a806f]">
+      Verification Status
+    </p>
+
+    <span
+      className={`mt-1 inline-flex rounded-full px-2.5 py-1 text-[8px] font-semibold ${
+        selectedProfile.profile_documents?.verification_status === "Approved"
+          ? "bg-[#e7f6ed] text-[#287b51]"
+          : selectedProfile.profile_documents?.verification_status === "Rejected"
+            ? "bg-[#f8e3e3] text-[#b63b3b]"
+            : "bg-[#fff1d8] text-[#b36b11]"
+      }`}
+    >
+      {selectedProfile.profile_documents?.verification_status || "Pending"}
+    </span>
+
+  </div>
+
+  {/* Aadhaar Card */}
   <div className="mt-4">
 
     <p className="text-[8px] text-[#9a806f]">
@@ -936,12 +1134,69 @@ const filteredProfiles = profiles.filter((profile) => {
         View Aadhaar Card
       </a>
     ) : (
-      <p className="mt-2 text-[10px] text-[#9a806f]">
+      <p className="mt-2 text-[10px] text-[#b63b3b]">
         Aadhaar card not uploaded
       </p>
     )}
 
   </div>
+
+  {/* Verification Note */}
+  {selectedProfile.profile_documents?.verification_note && (
+    <div className="mt-3 rounded-lg border border-[#eadfce] bg-white p-3">
+
+      <p className="text-[8px] text-[#9a806f]">
+        Verification Note
+      </p>
+
+      <p className="mt-1 text-[10px] text-[#563927]">
+        {selectedProfile.profile_documents.verification_note}
+      </p>
+
+    </div>
+  )}
+{/* Aadhaar Actions */}
+{selectedProfile.profile_documents?.aadhar_card &&
+ selectedProfile.profile_documents?.verification_status === "Pending" && (
+
+  <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+
+    <button
+      type="button"
+      disabled={updatingStatus}
+      onClick={() =>
+        updateAadharVerification(
+          selectedProfile.id,
+          "Rejected",
+          "Aadhaar card could not be verified."
+        )
+      }
+      className="flex-1 rounded-lg border border-[#d9a0a0] bg-[#fff5f5] py-2.5 text-[10px] font-semibold text-[#b63b3b] hover:bg-[#fceaea] disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {updatingStatus ? "Updating..." : "✕ Reject Aadhaar"}
+    </button>
+
+    <button
+      type="button"
+      disabled={updatingStatus}
+      onClick={() =>
+        updateAadharVerification(
+          selectedProfile.id,
+          "Approved",
+          "Aadhaar card verified successfully."
+        )
+      }
+      className="flex-1 rounded-lg bg-[#287b51] py-2.5 text-[10px] font-semibold text-white hover:bg-[#216541] disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {updatingStatus
+        ? "Updating..."
+        : "✓ Approve Aadhaar"}
+    </button>
+
+  </div>
+
+)}
+</div> 
 
 </div>
 {/* Certificate */}
@@ -1011,7 +1266,197 @@ const filteredProfiles = profiles.filter((profile) => {
 
 
       )}
+{/* Membership Details Modal */}
+{selectedMembership && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+   <div className="w-full max-w-2xl max-h-[90vh] rounded-2xl bg-white shadow-2xl">
 
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-[#f0dca5] px-6 py-4">
+        <div>
+          <h2 className="text-lg font-bold text-[#7b1e1e]">
+            Membership Details
+          </h2>
+          <p className="text-[11px] text-gray-500">
+            Complete membership and payment information
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setSelectedMembership(null)}
+          className="text-xl font-bold text-gray-500 hover:text-red-600"
+        >
+          ×
+        </button>
+      </div>
+
+      {/* Body */}
+      <div className="max-h-[70vh] overflow-y-auto px-6 py-5">
+
+        {/* User Details */}
+        <div className="mb-5">
+          <h3 className="mb-3 text-sm font-bold text-[#7b1e1e]">
+            User Details
+          </h3>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <p className="text-[10px] text-gray-500">Name</p>
+              <p className="text-sm font-semibold text-gray-800">
+                {selectedMembership.profile?.full_name || "-"}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] text-gray-500">Email</p>
+              <p className="text-sm text-gray-800">
+                {selectedMembership.profile?.email || "-"}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] text-gray-500">Mobile</p>
+              <p className="text-sm text-gray-800">
+                {selectedMembership.profile?.mobile || "-"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Membership Details */}
+        <div className="mb-5">
+          <h3 className="mb-3 text-sm font-bold text-[#7b1e1e]">
+            Membership Details
+          </h3>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+            <div>
+              <p className="text-[10px] text-gray-500">Plan</p>
+              <p className="text-sm font-semibold text-gray-800">
+                {selectedMembership.membership?.plan_name || "-"}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] text-gray-500">Status</p>
+              <p className="text-sm font-semibold text-gray-800">
+                {selectedMembership.membership?.status || "-"}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] text-gray-500">Start Date</p>
+              <p className="text-sm text-gray-800">
+                {selectedMembership.membership?.start_date
+                  ? new Date(
+                      selectedMembership.membership.start_date
+                    ).toLocaleString()
+                  : "-"}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] text-gray-500">End Date</p>
+              <p className="text-sm text-gray-800">
+                {selectedMembership.membership?.end_date
+                  ? new Date(
+                      selectedMembership.membership.end_date
+                    ).toLocaleString()
+                  : "-"}
+              </p>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Payment Details */}
+        <div>
+          <h3 className="mb-3 text-sm font-bold text-[#7b1e1e]">
+            Payment Details
+          </h3>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+            <div>
+              <p className="text-[10px] text-gray-500">Amount</p>
+              <p className="text-sm font-semibold text-gray-800">
+                ₹{selectedMembership.payment?.amount ?? "-"}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] text-gray-500">
+                Payment Status
+              </p>
+              <p className="text-sm font-semibold text-gray-800">
+                {selectedMembership.payment?.payment_status || "-"}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] text-gray-500">
+                Payment Method
+              </p>
+              <p className="text-sm text-gray-800">
+                {selectedMembership.payment?.payment_method || "-"}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] text-gray-500">
+                Transaction ID
+              </p>
+              <p className="break-all text-sm text-gray-800">
+                {selectedMembership.payment?.transaction_id || "-"}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] text-gray-500">
+                Paid Date
+              </p>
+              <p className="text-sm text-gray-800">
+                {selectedMembership.payment?.paid_at
+                  ? new Date(
+                      selectedMembership.payment.paid_at
+                    ).toLocaleString()
+                  : "-"}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] text-gray-500">
+                Expiry Date
+              </p>
+              <p className="text-sm text-gray-800">
+  {selectedMembership.membership?.end_date
+    ? new Date(
+        selectedMembership.membership.end_date
+      ).toLocaleString()
+    : "-"}
+</p>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="flex justify-end border-t border-[#f0dca5] px-6 py-4">
+        <button
+          type="button"
+          onClick={() => setSelectedMembership(null)}
+          className="rounded-lg bg-[#7b1e1e] px-5 py-2 text-xs font-semibold text-white hover:bg-[#651818]"
+        >
+          Close
+        </button>
+      </div>
+
+    </div>
+  </div>
+)}
     </div>
   );
 }

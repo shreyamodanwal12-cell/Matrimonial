@@ -75,7 +75,20 @@ function ChairmanPage() {
         .chairman-float {
           animation: chairmanFloat 5s ease-in-out infinite;
         }
+        .chairman-image-move {
+          animation: chairmanImageMove 6s ease-in-out infinite;
+          transform-origin: center;
+        }
 
+        @keyframes chairmanImageMove {
+          0%, 100% {
+            transform: scale(1) translateY(0);
+          }
+
+          50% {
+            transform: scale(1.03) translateY(-5px);
+          }
+        }
         @keyframes chairmanFloat {
           0%, 100% {
             transform: translateY(0);
@@ -228,11 +241,11 @@ function ChairmanPage() {
 
                 <div className="chairman-glow absolute left-1/2 top-4 h-[390px] w-[270px] -translate-x-1/2 overflow-hidden rounded-[30px] border-[5px] border-[#d7a744] bg-[#8c1d18] shadow-2xl sm:h-[450px] sm:w-[310px]">
 
-                  <img
-                    src={chairman1}
-                    alt="Shri Chandrashekhar Kakkeri"
-                    className="h-full w-full object-cover"
-                  />
+                 <img
+  src={chairman1}
+  alt="Shri Chandrashekhar Kakkeri"
+  className="chairman-image-move h-full w-full object-cover"
+/>
 
                 </div>
 

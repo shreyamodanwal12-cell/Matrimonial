@@ -7,6 +7,7 @@ import MembersPage from "./pages/admin/MembersPage";
 import ProfilesPage from "./pages/admin/ProfilesPage";
 import RequestsPage from "./pages/admin/RequestsPage";
 import MatchesPage from "./pages/admin/MatchesPage";
+import AdminChatPage from "./pages/admin/AdminChatPage";
 import ReportsPage from "./pages/admin/ReportsPage";
 import SettingsPage from "./pages/admin/SettingsPage";
 import PlansPage from "./pages/payment/PlansPage";
@@ -29,7 +30,7 @@ import AadhaarVerificationPage from "./pages/AadhaarVerificationPage";
 import InterestRequestsPage from "./pages/InterestRequestsPage";
 import MyInterestsPage from "./pages/MyInterestsPage";
 import AccountActivityPage from "./pages/AccountActivityPage";
-
+import NotificationsPage from "./pages/NotificationsPage";
 
 function App() {
   const path = window.location.pathname;
@@ -82,6 +83,9 @@ if (path === "/profile") {
 }
 if (path.startsWith("/chat")) {
   return <ChatPage />;
+}
+if (path === "/notifications") {
+  return <NotificationsPage />;
 }
 if (path === "/privacy-policy") {
   return <PrivacyPolicyPage />;
@@ -198,7 +202,19 @@ if (path === "/account-activity") {
       </AdminLayout>
     );
   }
+// Admin Chat
+if (path === "/admin/chat") {
+  if (!isAdmin) {
+    window.location.href = "/login";
+    return null;
+  }
 
+  return (
+    <AdminLayout>
+      <AdminChatPage />
+    </AdminLayout>
+  );
+}
   // Admin Reports
   if (path === "/admin/reports") {
     if (!isAdmin) {

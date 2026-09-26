@@ -1122,3 +1122,241 @@ export const deleteMessageForEveryone = async (req, res) => {
     });
   }
 };
+
+// ======================================================
+// ADMIN - GET ALL CONVERSATIONS
+// ======================================================
+
+export const getAllConversationsForAdmin = async (req, res) => {
+  try {
+    const { data: conversations, error } = await supabase
+      .from("conversations")
+      .select(`
+        id,
+        user1_id,
+        user2_id,
+        created_at
+      `)
+      .order("created_at", {
+        ascending: false,
+      });
+
+    if (error) {
+      console.error(
+        "Admin get conversations error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to fetch conversations",
+      });
+    }
+
+    const formattedConversations = await Promise.all(
+      (conversations || []).map(async (conversation) => {
+        const { data: users, error: usersError } =
+          await supabase
+            .from("users")
+            .select(`
+              id,
+              full_name,
+              profile_photo
+            `)
+            .in("id", [
+              conversation.user1_id,
+              conversation.user2_id,
+            ]);
+
+        if (usersError) {
+          console.error(
+            "Admin get chat users error:",
+            usersError
+          );
+        }
+
+        const user1 =
+          users?.find(
+            (user) =>
+              user.id === conversation.user1_id
+          ) || null;
+
+        const user2 =
+          users?.find(
+            (user) =>
+              user.id === conversation.user2_id
+          ) || null;
+
+        // Get latest message
+        const { data: lastMessages } =
+          await supabase
+            .from("messages")
+            .select(`
+              id,
+              message,
+              image_url,
+              sender_id,
+              receiver_id,
+              created_at,
+              is_read
+            `)
+            .eq(
+              "conversation_id",
+              conversation.id
+            )
+            .order("created_at", {
+              ascending: false,
+            })
+            .limit(1);
+
+        return {
+          id: conversation.id,
+          created_at: conversation.created_at,
+          user1,
+          user2,
+          lastMessage:
+            lastMessages?.[0] || null,
+        };
+      })
+    );
+
+    return res.status(200).json({
+      success: true,
+      conversations: formattedConversations,
+    });
+  } catch (error) {
+    console.error(
+      "Admin get conversations server error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        error.message ||
+        "Internal server error",
+    });
+  }
+};
+// ======================================================
+// ADMIN - GET CONVERSATION MESSAGES
+// ======================================================
+
+export const getConversationMessagesForAdmin = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+
+    if (!conversationId) {
+      return res.status(400).json({
+        success: false,
+        message: "Conversation ID is required",
+      });
+    }
+
+    // Check conversation
+    const { data: conversation, error: conversationError } =
+      await supabase
+        .from("conversations")
+        .select(`
+          id,
+          user1_id,
+          user2_id,
+          created_at
+        `)
+        .eq("id", conversationId)
+        .maybeSingle();
+
+    if (conversationError) {
+      console.error(
+        "Admin conversation check error:",
+        conversationError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to verify conversation",
+      });
+    }
+
+    if (!conversation) {
+      return res.status(404).json({
+        success: false,
+        message: "Conversation not found",
+      });
+    }
+
+    // Get all messages
+    const { data: messages, error: messagesError } =
+      await supabase
+        .from("messages")
+        .select(`
+          id,
+          conversation_id,
+          sender_id,
+          receiver_id,
+          message,
+          image_url,
+          is_read,
+          deleted_for_sender,
+          deleted_for_receiver,
+          deleted_for_everyone,
+          created_at
+        `)
+        .eq("conversation_id", conversationId)
+        .order("created_at", {
+          ascending: true,
+        });
+
+    if (messagesError) {
+      console.error(
+        "Admin get messages error:",
+        messagesError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to fetch messages",
+      });
+    }
+
+    // Get both users
+    const { data: users, error: usersError } =
+      await supabase
+        .from("users")
+        .select(`
+          id,
+          full_name,
+          profile_photo
+        `)
+        .in("id", [
+          conversation.user1_id,
+          conversation.user2_id,
+        ]);
+
+    if (usersError) {
+      console.error(
+        "Admin get conversation users error:",
+        usersError
+      );
+    }
+
+    return res.status(200).json({
+      success: true,
+      conversation,
+      users: users || [],
+      messages: messages || [],
+    });
+  } catch (error) {
+    console.error(
+      "Admin get conversation messages error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        error.message ||
+        "Internal server error",
+    });
+  }
+};

@@ -78,26 +78,33 @@ export const getAllProfiles = async (req, res) => {
           partner_religion,
           partner_location
         ),
-        memberships (
+       memberships (
+  id,
   plan_name,
   status,
   start_date,
-  end_date
+  end_date,
+  created_at
 ),
 payments (
+  id,
   plan_name,
   amount,
   payment_status,
   payment_method,
   transaction_id,
   paid_at,
-  expires_at
+  expires_at,
+  created_at
 ),
           profile_documents (
   aadhar_card,
   photo_1,
   photo_2,
-  photo_3
+  photo_3,
+  verification_status,
+  verification_note,
+  verified_at
 )
       `)
       .eq("role", "user")
@@ -138,7 +145,7 @@ export const getFeaturedProfiles = async (req, res) => {
     const userId = req.user.id;
 
     // ==========================================
-    // 2. GET ACTIVE MEMBERSHIP
+    // 2. GET LATEST MEMBERSHIP
     // ==========================================
 
     const { data: membership, error: membershipError } =
@@ -146,7 +153,6 @@ export const getFeaturedProfiles = async (req, res) => {
         .from("memberships")
         .select("plan_name, end_date, status")
         .eq("user_id", userId)
-        .eq("status", "ACTIVE")
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -164,51 +170,70 @@ export const getFeaturedProfiles = async (req, res) => {
     }
 
     // ==========================================
-    // 3. CHECK MEMBERSHIP EXISTS
+    // 3. DEFAULT = FREE USER
+    // FREE USER CAN VIEW 5 PROFILES
     // ==========================================
 
-    if (!membership) {
-      return res.status(403).json({
-        success: false,
-        message: "Active membership required",
-      });
+    let profileLimit = 5;
+    let userPlan = "Free";
+
+    // ==========================================
+    // 4. CHECK PAID MEMBERSHIP
+    // ==========================================
+
+    if (membership) {
+      const membershipStatus =
+        membership.status?.toUpperCase();
+
+      const expiryDate = membership.end_date
+        ? new Date(membership.end_date)
+        : null;
+
+      const isActive =
+        membershipStatus === "ACTIVE" &&
+        expiryDate &&
+        expiryDate >= new Date();
+
+      // ========================================
+      // ACTIVE PAID MEMBERSHIP
+      // ========================================
+
+      if (isActive) {
+        userPlan = membership.plan_name;
+
+        if (membership.plan_name === "Basic") {
+          profileLimit = 10;
+        } else if (membership.plan_name === "Premium") {
+          profileLimit = 50;
+        } else if (membership.plan_name === "Royal") {
+          profileLimit = null; // Unlimited
+        } else {
+          // Unknown plan -> Free limit
+          userPlan = "Free";
+          profileLimit = 5;
+        }
+      }
+
+      // ========================================
+      // EXPIRED / INACTIVE MEMBERSHIP
+      // Treat as FREE user
+      // ========================================
+
+      else {
+        userPlan = "Free";
+        profileLimit = 5;
+
+        console.log(
+          "Membership expired/inactive. Using Free limit: 5"
+        );
+      }
     }
 
-    // ==========================================
-    // 4. CHECK MEMBERSHIP EXPIRY
-    // ==========================================
-
-    const now = new Date();
-    const expiryDate = new Date(membership.end_date);
-
-    if (expiryDate < now) {
-      return res.status(403).json({
-        success: false,
-        message: "Your membership has expired",
-      });
-    }
+    console.log("User Plan:", userPlan);
+    console.log("Allowed Profile Limit:", profileLimit);
 
     // ==========================================
-    // 5. PLAN KE ACCORDING PROFILE LIMIT
-    // ==========================================
-
-    let profileLimit = 0;
-
-    if (membership.plan_name === "Basic") {
-      profileLimit = 10;
-    } else if (membership.plan_name === "Premium") {
-      profileLimit = 50;
-    } else if (membership.plan_name === "Royal") {
-      profileLimit = null; // Unlimited
-    } else {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid membership plan",
-      });
-    }
-
-    // ==========================================
-    // 6. GET APPROVED PROFILES
+    // 5. GET APPROVED PROFILES
     // ==========================================
 
     let query = supabase
@@ -243,7 +268,7 @@ export const getFeaturedProfiles = async (req, res) => {
       });
 
     // ==========================================
-    // 7. BASIC / PREMIUM LIMIT
+    // 6. APPLY PROFILE LIMIT
     // ==========================================
 
     if (profileLimit !== null) {
@@ -251,7 +276,7 @@ export const getFeaturedProfiles = async (req, res) => {
     }
 
     // ==========================================
-    // 8. EXECUTE QUERY
+    // 7. EXECUTE QUERY
     // ==========================================
 
     const { data: profiles, error: profilesError } =
@@ -270,12 +295,12 @@ export const getFeaturedProfiles = async (req, res) => {
     }
 
     // ==========================================
-    // 9. RESPONSE
+    // 8. RESPONSE
     // ==========================================
 
     return res.status(200).json({
       success: true,
-      plan: membership.plan_name,
+      plan: userPlan,
       profileLimit:
         profileLimit === null
           ? "Unlimited"
@@ -582,7 +607,11 @@ export const uploadAadharCard = async (req, res) => {
         .from("profile_documents")
         .update({
           aadhar_card: aadharUrl,
+           verification_status: "Pending",
+      verification_note: null,
+      verified_at: null,
           updated_at: new Date().toISOString(),
+          
         })
         .eq("user_id", userId)
         .select()
@@ -590,22 +619,26 @@ export const uploadAadharCard = async (req, res) => {
 
       document = result.data;
       databaseError = result.error;
-    } else {
-      // Create new record
-      const result = await supabase
-        .from("profile_documents")
-        .insert([
-          {
-            user_id: userId,
-            aadhar_card: aadharUrl,
-          },
-        ])
-        .select()
-        .single();
+    }  else {
+  // Create new record
+  const result = await supabase
+    .from("profile_documents")
+    .insert([
+      {
+        user_id: userId,
+        aadhar_card: aadharUrl,
+        verification_status: "Pending",
+        verification_note: null,
+        verified_at: null,
+      },
+    ])
+    .select()
+    .single();
 
-      document = result.data;
-      databaseError = result.error;
-    }
+  document = result.data;
+  databaseError = result.error;
+}
+        
 
     if (databaseError) {
       console.error(
@@ -863,6 +896,110 @@ export const updateProfileStatus = async (req, res) => {
 };
 
 // ======================================================
+// UPDATE AADHAAR VERIFICATION STATUS (ADMIN)
+// ======================================================
+
+export const updateAadharVerification = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { verification_status, verification_note } = req.body;
+
+    // Only Approved or Rejected are allowed
+    if (!["Approved", "Rejected"].includes(verification_status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Aadhaar verification status",
+      });
+    }
+
+    // Check whether profile document exists
+    const { data: existingDocument, error: findError } =
+      await supabase
+        .from("profile_documents")
+        .select("id, user_id, aadhar_card")
+        .eq("user_id", id)
+        .maybeSingle();
+
+    if (findError) {
+      console.error(
+        "Find Aadhaar document error:",
+        findError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to find Aadhaar document",
+      });
+    }
+
+    // Aadhaar not uploaded
+    if (!existingDocument || !existingDocument.aadhar_card) {
+      return res.status(400).json({
+        success: false,
+        message: "Aadhaar card has not been uploaded",
+      });
+    }
+
+    // Update verification status
+    const { data: document, error: updateError } =
+      await supabase
+        .from("profile_documents")
+        .update({
+          verification_status,
+          verification_note:
+            verification_note?.trim() || null,
+          verified_at:
+            verification_status === "Approved"
+              ? new Date().toISOString()
+              : null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", id)
+        .select(`
+          id,
+          user_id,
+          aadhar_card,
+          verification_status,
+          verification_note,
+          verified_at
+        `)
+        .single();
+
+    if (updateError) {
+      console.error(
+        "Update Aadhaar verification error:",
+        updateError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to update Aadhaar verification",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message:
+        verification_status === "Approved"
+          ? "Aadhaar verified successfully"
+          : "Aadhaar rejected successfully",
+      document,
+    });
+
+  } catch (error) {
+    console.error(
+      "Aadhaar verification error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// ======================================================
 // UPDATE MY MATRIMONIAL PROFILE
 // ======================================================
 
@@ -1031,7 +1168,71 @@ if (!loggedInUserId) {
     message: "Please login first",
   });
 }
+// =========================
+// RECORD PROFILE VIEW
+// =========================
 
+if (loggedInUserId !== userId) {
+  const { error: viewError } = await supabase
+    .from("profile_views")
+    .upsert(
+      {
+        viewer_id: loggedInUserId,
+        viewed_user_id: userId,
+        viewed_at: new Date().toISOString(),
+      },
+      {
+        onConflict: "viewer_id,viewed_user_id",
+      }
+    );
+
+  if (viewError) {
+    console.error("Profile view tracking error:", viewError);
+  }
+}
+// =========================
+// CREATE PROFILE VIEW NOTIFICATION
+// =========================
+
+// =========================
+// CREATE PROFILE VIEW NOTIFICATION
+// =========================
+
+if (loggedInUserId !== userId) {
+  const { data: existingNotification, error: notificationCheckError } =
+    await supabase
+      .from("notifications")
+      .select("id, is_read")
+      .eq("user_id", userId)
+      .eq("related_user_id", loggedInUserId)
+      .eq("type", "profile_view")
+      .maybeSingle();
+
+  if (notificationCheckError) {
+    console.error(
+      "Profile view notification check error:",
+      notificationCheckError
+    );
+  } else if (!existingNotification) {
+    const { error: notificationError } = await supabase
+      .from("notifications")
+      .insert({
+        user_id: userId,
+        type: "profile_view",
+        title: "Someone viewed your profile",
+        message: "Someone has viewed your matrimonial profile.",
+        related_user_id: loggedInUserId,
+        is_read: false,
+      });
+
+    if (notificationError) {
+      console.error(
+        "Profile view notification error:",
+        notificationError
+      );
+    }
+  }
+}
 // =========================
 // CHECK ACTIVE MEMBERSHIP
 // =========================
@@ -1211,7 +1412,7 @@ export const checkAadharVerification = async (req, res) => {
 
     const { data, error } = await supabase
       .from("profile_documents")
-      .select("aadhar_card")
+     .select("aadhar_card, verification_status, verification_note")
       .eq("user_id", userId)
       .maybeSingle();
 
@@ -1225,7 +1426,7 @@ export const checkAadharVerification = async (req, res) => {
     }
 
     const isVerified =
-      !!data?.aadhar_card;
+  data?.verification_status === "Approved";
 
     return res.status(200).json({
       success: true,
@@ -1677,6 +1878,187 @@ export const getAllProfileReports = async (req, res) => {
       "Get all profile reports error:",
       error
     );
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+
+// ======================================================
+// GET MY UNREAD NOTIFICATION COUNT
+// ======================================================
+
+export const getMyNotificationCount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const { count, error } = await supabase
+      .from("notifications")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("is_read", false);
+
+    if (error) {
+      console.error("Notification count error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to fetch notification count",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: count || 0,
+    });
+  } catch (error) {
+    console.error("Notification count error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+/// ======================================================
+// GET MY NOTIFICATIONS
+// ======================================================
+
+export const getMyNotifications = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const { data: notifications, error } = await supabase
+      .from("notifications")
+      .select(`
+        id,
+        type,
+        title,
+        message,
+        related_user_id,
+        is_read,
+        created_at
+      `)
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Get notifications error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to fetch notifications",
+      });
+    }
+
+    // ==========================================
+    // GET RELATED USERS
+    // ==========================================
+
+    const relatedUserIds = [
+      ...new Set(
+        (notifications || [])
+          .map((notification) => notification.related_user_id)
+          .filter(Boolean)
+      ),
+    ];
+
+    let relatedUsers = [];
+
+    if (relatedUserIds.length > 0) {
+      const { data: users, error: usersError } = await supabase
+        .from("users")
+        .select(`
+          id,
+          full_name,
+          profile_photo
+        `)
+        .in("id", relatedUserIds);
+
+      if (usersError) {
+        console.error(
+          "Get notification users error:",
+          usersError
+        );
+      } else {
+        relatedUsers = users || [];
+      }
+    }
+
+    // ==========================================
+    // ATTACH USER DETAILS TO NOTIFICATIONS
+    // ==========================================
+
+    const formattedNotifications = (notifications || []).map(
+      (notification) => {
+        const relatedUser = relatedUsers.find(
+          (user) =>
+            user.id === notification.related_user_id
+        );
+
+        return {
+          ...notification,
+          related_user: relatedUser || null,
+        };
+      }
+    );
+
+    return res.status(200).json({
+      success: true,
+      notifications: formattedNotifications,
+    });
+  } catch (error) {
+    console.error("Get notifications error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+// ======================================================
+// MARK PROFILE VIEW NOTIFICATION AS READ
+// ======================================================
+
+export const markProfileViewNotificationAsRead = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const notificationId = req.params.id;
+
+    console.log("READ USER ID:", userId);
+    console.log("READ NOTIFICATION ID:", notificationId);
+
+    const { data, error } = await supabase
+      .from("notifications")
+      .update({
+        is_read: true,
+      })
+      .eq("id", notificationId)
+      .eq("user_id", userId)
+      .select();
+
+    console.log("UPDATED DATA:", data);
+    console.log("UPDATE ERROR:", error);
+
+    if (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Unable to mark notification as read",
+        error: error.message,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Notification marked as read",
+      data,
+    });
+  } catch (error) {
+    console.error("Mark profile notification error:", error);
 
     return res.status(500).json({
       success: false,

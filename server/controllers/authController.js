@@ -9,7 +9,60 @@ const generateToken = (user) => {
     { expiresIn: "1h" }
   );
 };
+// ======================================================
+// CHECK MOBILE NUMBER
+// ======================================================
 
+export const checkMobileNumber = async (req, res) => {
+  try {
+    const { mobile } = req.body;
+
+    if (!mobile) {
+      return res.status(400).json({
+        success: false,
+        message: "Mobile number is required",
+      });
+    }
+
+    const { data: existingUser, error } = await supabase
+      .from("users")
+      .select("id")
+      .eq("mobile", mobile)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Check mobile error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to check mobile number",
+      });
+    }
+
+    // Duplicate mobile
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        exists: true,
+        message: "This mobile number is already registered.",
+      });
+    }
+
+    // Mobile is available
+    return res.status(200).json({
+      success: true,
+      exists: false,
+      message: "Mobile number is available.",
+    });
+  } catch (error) {
+    console.error("Check mobile error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to check mobile number",
+    });
+  }
+};
 export const registerUser = async (req, res) => {
   try {
     const {
@@ -356,12 +409,15 @@ export const registerUser = async (req, res) => {
     // Success
     // -----------------------------
 
-    return res.status(201).json({
-      success: true,
-      message: "Registration completed successfully",
-      user,
-      profile,
-    });
+    const token = generateToken(user);
+
+return res.status(201).json({
+  success: true,
+  message: "Registration completed successfully",
+  token,
+  user,
+  profile,
+});
 
   } catch (error) {
     console.error(
@@ -442,7 +498,47 @@ export const loginUser = async (req, res) => {
         message: "Invalid email or password",
       });
     }
+// ======================================================
+// ADMIN LOGIN - APPROVAL CHECK NOT REQUIRED
+// ======================================================
 
+if (user.role === "admin") {
+  const token = jwt.sign(
+    {
+      id: user.id,
+      email: user.email,
+      role: "authenticated",
+      app_role: user.role,
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "7d",
+    }
+  );
+
+  return res.status(200).json({
+    success: true,
+    message: "Login successful",
+    token,
+
+    user: {
+      id: user.id,
+      full_name: user.full_name,
+      email: user.email,
+      mobile: user.mobile,
+      role: user.role,
+      profile_status: user.profile_status || "Approved",
+
+      aadhaarUploaded: true,
+      aadhaarVerified: true,
+      aadhaarVerificationStatus: "Approved",
+      aadhaarVerificationNote: null,
+
+      membershipActive: true,
+      membership: null,
+    },
+  });
+}
     // ======================================================
     // CHECK AADHAAR STATUS
     // ======================================================
@@ -452,7 +548,9 @@ export const loginUser = async (req, res) => {
       error: documentError,
     } = await supabase
       .from("profile_documents")
-      .select("id, aadhar_card")
+      .select(
+  "id, aadhar_card, verification_status, verification_note"
+)
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -468,13 +566,64 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    const aadhaarUploaded =
-      !!documents?.aadhar_card;
+   const aadhaarUploaded =
+  !!documents?.aadhar_card;
 
-    // ======================================================
-    // CHECK MEMBERSHIP STATUS
-    // ======================================================
+const aadhaarVerified =
+  documents?.verification_status === "Approved";
 
+  const aadhaarVerificationStatus =
+  documents?.verification_status || "Pending";
+
+const aadhaarVerificationNote =
+  documents?.verification_note || null;
+
+
+   // ======================================================
+// BLOCK LOGIN UNTIL ADMIN APPROVES
+// ======================================================
+
+// 1. Aadhaar rejected
+if (aadhaarVerificationStatus === "Rejected") {
+  return res.status(403).json({
+    success: false,
+    message:
+      "Your Aadhaar verification was rejected. Please upload a valid Aadhaar card.",
+    approvalPending: false,
+    aadhaarVerificationStatus,
+    aadhaarVerificationNote,
+    profile_status: user.profile_status || "pending",
+  });
+}
+
+// 2. Aadhaar not approved
+if (aadhaarVerificationStatus !== "Approved") {
+  return res.status(403).json({
+    success: false,
+    message:
+      "Your Aadhaar verification is pending. Please wait for admin approval.",
+    approvalPending: true,
+    aadhaarVerificationStatus,
+    aadhaarVerificationNote,
+    profile_status: user.profile_status || "pending",
+  });
+}
+
+// 3. Profile not approved
+if (
+  String(user.profile_status || "").toLowerCase() !==
+  "approved"
+) {
+  return res.status(403).json({
+    success: false,
+    message:
+      "Your profile is pending for admin approval. Please wait for admin approval.",
+    approvalPending: true,
+    profile_status: user.profile_status || "pending",
+    aadhaarVerificationStatus,
+    aadhaarVerificationNote,
+  });
+}
     const {
       data: membership,
       error: membershipError,
@@ -552,6 +701,12 @@ export const loginUser = async (req, res) => {
           user.profile_status || "pending",
 
         aadhaarUploaded,
+
+aadhaarVerified,
+aadhaarVerificationStatus,
+
+aadhaarVerificationNote,
+membershipActive,
 
         membershipActive,
 

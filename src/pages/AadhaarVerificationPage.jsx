@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import API_BASE_URL from "../api/api";
 
 const inputClass =
@@ -24,7 +24,31 @@ function AadhaarVerificationPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+const [aadhaarVerificationStatus, setAadhaarVerificationStatus] =
+  useState("");
 
+const [aadhaarVerificationNote, setAadhaarVerificationNote] =
+  useState("");
+
+  // =========================================
+// CHECK PREVIOUS AADHAAR VERIFICATION
+// =========================================
+
+useEffect(() => {
+  const savedUser = JSON.parse(
+    localStorage.getItem("user") || "null"
+  );
+
+  if (savedUser?.aadhaarVerificationStatus) {
+    setAadhaarVerificationStatus(
+      savedUser.aadhaarVerificationStatus
+    );
+
+    setAadhaarVerificationNote(
+      savedUser.aadhaarVerificationNote || ""
+    );
+  }
+}, []);
   // =========================================
   // INPUT CHANGE
   // =========================================
@@ -91,7 +115,7 @@ function AadhaarVerificationPage() {
       // =====================================
 
       const token = localStorage.getItem("token");
-
+console.log("Aadhaar Token:", token);
       if (!token) {
         setError("Please login again.");
         return;
@@ -291,15 +315,19 @@ function AadhaarVerificationPage() {
 
 
       // =====================================
-      // SUCCESS
-      // =====================================
+// SUCCESS
+// =====================================
 
-      alert(
-        "Aadhaar and all 3 photos uploaded successfully!"
-      );
+alert(
+  "Aadhaar and all 3 photos uploaded successfully! Please login after admin approval."
+);
 
-      window.location.href =
-        "/profile-submitted";
+// Clear login session after Aadhaar submission
+localStorage.removeItem("token");
+localStorage.removeItem("user");
+
+// Go to Login page
+window.location.href = "/login";
 
     } catch (error) {
 
@@ -382,7 +410,44 @@ function AadhaarVerificationPage() {
       <div className="w-full flex justify-center px-3 sm:px-5 pb-10">
 
         <div className="w-full max-w-[650px] bg-white rounded-[14px] border border-[#f1c63d] shadow-[0_7px_20px_rgba(88,67,20,0.14)] px-4 sm:px-7 pt-7 pb-6">
+{/* AADHAAR REJECTION ALERT */}
 
+{aadhaarVerificationStatus === "Rejected" && (
+  <div className="mb-5 rounded-[10px] border border-[#f1b5b5] bg-[#fff4f4] px-4 py-3">
+
+    <div className="flex items-start gap-3">
+
+      <div className="flex-shrink-0 w-[28px] h-[28px] rounded-full bg-[#d9272e] text-white flex items-center justify-center text-[13px] font-bold">
+        !
+      </div>
+
+      <div>
+
+        <h3 className="text-[12px] font-semibold text-[#b51f25]">
+          Aadhaar Verification Failed
+        </h3>
+
+        <p className="text-[10px] text-[#555] mt-1 leading-[15px]">
+          Your Aadhaar card could not be verified.
+          Please upload a valid Aadhaar card to continue
+          with profile verification.
+        </p>
+
+        {aadhaarVerificationNote && (
+          <p className="text-[10px] text-[#8a3030] mt-2">
+            <span className="font-semibold">
+              Admin Note:
+            </span>{" "}
+            {aadhaarVerificationNote}
+          </p>
+        )}
+
+      </div>
+
+    </div>
+
+  </div>
+)}
 
           {/* PROGRESS */}
 

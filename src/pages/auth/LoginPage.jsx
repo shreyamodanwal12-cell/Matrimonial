@@ -11,7 +11,7 @@ function LoginPage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
+const [approvalMessage, setApprovalMessage] = useState("");
   const inputClass =
     "h-11 w-full rounded-md border border-[#e7c77e] bg-white px-3 text-[12px] text-[#563927] outline-none transition placeholder:text-[#b6a294] focus:border-[#c58a25] focus:ring-2 focus:ring-[#e7c77e]/30";
 
@@ -30,6 +30,7 @@ function LoginPage() {
     e.preventDefault();
 
     setError("");
+setApprovalMessage("");
 
     if (!formData.email || !formData.password) {
       setError("Email and password are required.");
@@ -56,9 +57,16 @@ function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message || "Login failed.");
-        return;
-      }
+  if (response.status === 403 && data.approvalPending) {
+    setApprovalMessage(
+      data.message || "Please wait for admin approval."
+    );
+  } else {
+    setError(data.message || "Login failed.");
+  }
+
+  return;
+}
 
       // Save JWT token
       localStorage.setItem("token", data.token);
@@ -74,7 +82,33 @@ if (data.user.role === "admin") {
   window.location.href = "/admin";
   return;
 }
+// ========================================
+// CHECK AADHAAR + ADMIN APPROVAL
+// ========================================
 
+if (!data.user.aadhaarUploaded) {
+  window.location.href = "/aadhaar-verification";
+  return;
+}
+
+if (data.user.aadhaarVerificationStatus === "Rejected") {
+  window.location.href = "/aadhaar-verification";
+  return;
+}
+
+if (data.user.aadhaarVerificationStatus !== "Approved") {
+  setApprovalMessage(
+    "Your Aadhaar verification is pending. Please wait for admin approval."
+  );
+  return;
+}
+
+if (data.user.profile_status !== "Approved") {
+  setApprovalMessage(
+    "Your profile is pending for admin approval. Please wait for admin approval."
+  );
+  return;
+}
 // ========================================
 // CHECK MEMBERSHIP FOR NORMAL USER
 // ========================================
@@ -251,7 +285,20 @@ window.location.href = "/aadhaar-verification";
                 {error}
               </div>
             )}
+{/* ADMIN APPROVAL MESSAGE */}
+{approvalMessage && (
+  <div className="mb-4 rounded-md border border-[#e7c77e] bg-[#fff8df] px-4 py-3 text-center">
+    <div className="text-[18px]">⏳</div>
 
+    <p className="mt-1 text-[12px] font-semibold text-[#8c5f20]">
+      Wait for Admin Approval
+    </p>
+
+    <p className="mt-1 text-[10px] leading-[15px] text-[#806653]">
+      {approvalMessage}
+    </p>
+  </div>
+)}
 
             {/* Email */}
             <div>

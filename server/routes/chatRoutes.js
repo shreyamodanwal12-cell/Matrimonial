@@ -1,7 +1,7 @@
 import express from "express";
 
 import authMiddleware from "../middleware/authMiddleware.js";
-
+import adminMiddleware from "../middleware/adminMiddleware.js";
 import {
   createConversation,
   getMyConversations,
@@ -11,6 +11,8 @@ import {
   markMessageAsRead,
   deleteMessageForMe,
 deleteMessageForEveryone,
+getAllConversationsForAdmin,
+getConversationMessagesForAdmin,
 } from "../controllers/chatController.js";
 
 const router = express.Router();
@@ -53,6 +55,28 @@ router.patch(
   authMiddleware,
   markMessageAsRead
 );
+// ======================================================
+// ADMIN - GET ALL CONVERSATIONS
+// ======================================================
+
+router.get(
+  "/admin/conversations",
+  authMiddleware,
+  adminMiddleware,
+  getAllConversationsForAdmin
+);
+
+// ======================================================
+// ADMIN - GET CONVERSATION MESSAGES
+// ======================================================
+
+router.get(
+  "/admin/conversations/:conversationId/messages",
+  authMiddleware,
+  adminMiddleware,
+  getConversationMessagesForAdmin
+);
+
 // ======================================================
 // SEND MESSAGE
 // ======================================================

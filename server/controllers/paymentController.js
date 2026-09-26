@@ -138,7 +138,6 @@ export const createPayment = async (req, res) => {
 
 export const checkPaymentStatus = async (req, res) => {
   try {
-
     const { orderId } = req.params;
 
     if (!orderId) {
@@ -148,26 +147,18 @@ export const checkPaymentStatus = async (req, res) => {
       });
     }
 
-
     // ==========================================
     // 1. PHONEPE STATUS
     // ==========================================
+    const response = await phonePeClient.getOrderStatus(orderId);
 
-    const response =
-      await phonePeClient.getOrderStatus(orderId);
-
-    console.log(
-      "PhonePe Status Response:",
-      response
-    );
+    console.log("PhonePe Status Response:", response);
 
     const status = response.state;
-
 
     // ==========================================
     // 2. TRANSACTION DETAILS
     // ==========================================
-
     let transactionId = null;
     let paymentMethod = null;
 
@@ -175,9 +166,7 @@ export const checkPaymentStatus = async (req, res) => {
       response.paymentDetails &&
       response.paymentDetails.length > 0
     ) {
-
-      const payment =
-        response.paymentDetails[0];
+      const payment = response.paymentDetails[0];
 
       transactionId =
         payment.transactionId || null;
@@ -186,11 +175,9 @@ export const checkPaymentStatus = async (req, res) => {
         payment.paymentMode || null;
     }
 
-
     // ==========================================
     // 3. PAYMENT RECORD FIND
     // ==========================================
-
     const {
       data: paymentData,
       error: paymentFetchError,
@@ -200,9 +187,7 @@ export const checkPaymentStatus = async (req, res) => {
       .eq("order_id", orderId)
       .single();
 
-
     if (paymentFetchError || !paymentData) {
-
       console.error(
         "Payment Record Fetch Error:",
         paymentFetchError
@@ -214,142 +199,153 @@ export const checkPaymentStatus = async (req, res) => {
       });
     }
 
-
     // ==========================================
     // 4. PAYMENT COMPLETED
     // ==========================================
+    if (status === "COMPLETED") {
+      console.log("✅ Payment completed");
 
-   
-// ==========================================
-// 3. Check karo membership already bani hai
-// ==========================================
+      // ------------------------------------------
+      // UPDATE PAYMENT AS PAID
+      // ------------------------------------------
+      const { data: updatedPayment, error: paymentUpdateError } =
+        await supabase
+          .from("payments")
+          .update({
+            payment_status: "paid",
+            transaction_id: transactionId,
+            payment_method: paymentMethod,
+            paid_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", paymentData.id)
+          .select()
+          .single();
 
-const { data: existingMembership, error: membershipCheckError } =
-  await supabase
-    .from("memberships")
-    .select("id")
-    .eq("payment_id", paymentData.id)
-    .maybeSingle();
+      if (paymentUpdateError) {
+        console.error(
+          "Payment Update Error:",
+          paymentUpdateError
+        );
 
-if (membershipCheckError) {
-  console.error(
-    "Membership Check Error:",
-    membershipCheckError
-  );
-}
+        return res.status(500).json({
+          success: false,
+          message: "Unable to update payment",
+        });
+      }
 
+      console.log(
+        "✅ Payment updated:",
+        updatedPayment
+      );
 
-// ==========================================
-// 4. Agar membership nahi bani hai
-// ==========================================
+      // ------------------------------------------
+      // CHECK MEMBERSHIP ALREADY EXISTS
+      // ------------------------------------------
+      const {
+        data: existingMembership,
+        error: membershipCheckError,
+      } = await supabase
+        .from("memberships")
+        .select("id")
+        .eq("payment_id", paymentData.id)
+        .maybeSingle();
 
-if (!existingMembership) {
+      if (membershipCheckError) {
+        console.error(
+          "Membership Check Error:",
+          membershipCheckError
+        );
+      }
 
-  const startDate = new Date();
+      // ------------------------------------------
+      // CREATE MEMBERSHIP ONLY AFTER PAYMENT
+      // ------------------------------------------
+      if (!existingMembership) {
+        const startDate = new Date();
 
-  // ------------------------------------------
-  // Plan ke according duration decide karo
-  // ------------------------------------------
+        let duration;
+        let months;
 
-  let duration;
-  let months;
+        if (paymentData.plan_name === "Basic") {
+          duration = "1 Month";
+          months = 1;
+        } else if (paymentData.plan_name === "Premium") {
+          duration = "3 Months";
+          months = 3;
+        } else if (paymentData.plan_name === "Royal") {
+          duration = "6 Months";
+          months = 6;
+        } else {
+          console.error(
+            "Unknown Plan:",
+            paymentData.plan_name
+          );
 
-  if (paymentData.plan_name === "Basic") {
-    duration = "1 Month";
-    months = 1;
-  }
+          return res.status(400).json({
+            success: false,
+            message: "Invalid plan name",
+          });
+        }
 
-  else if (paymentData.plan_name === "Premium") {
-    duration = "3 Months";
-    months = 3;
-  }
+        // ------------------------------------------
+        // END DATE
+        // ------------------------------------------
+        const endDate = new Date(startDate);
 
-  else if (paymentData.plan_name === "Royal") {
-    duration = "6 Months";
-    months = 6;
-  }
+        endDate.setMonth(
+          endDate.getMonth() + months
+        );
 
-  else {
-    console.error(
-      "Unknown Plan:",
-      paymentData.plan_name
-    );
+        // ------------------------------------------
+        // INSERT MEMBERSHIP
+        // ------------------------------------------
+        const {
+          data: membershipData,
+          error: membershipError,
+        } = await supabase
+          .from("memberships")
+          .insert([
+            {
+              user_id: paymentData.user_id,
+              plan_name: paymentData.plan_name,
+              duration: duration,
+              amount: paymentData.amount,
+              payment_id: paymentData.id,
+              start_date: startDate.toISOString(),
+              end_date: endDate.toISOString(),
+              status: "ACTIVE",
+            },
+          ])
+          .select()
+          .single();
 
-    return res.status(400).json({
-      success: false,
-      message: "Invalid plan name",
-    });
-  }
-
-
-  // ------------------------------------------
-  // End date calculate karo
-  // ------------------------------------------
-
-  const endDate = new Date(startDate);
-
-  endDate.setMonth(
-    endDate.getMonth() + months
-  );
-
-
-  // ==========================================
-  // MEMBERSHIP INSERT
-  // ==========================================
-
-  const {
-    data: membershipData,
-    error: membershipError
-  } = await supabase
-    .from("memberships")
-    .insert([
-      {
-        user_id: paymentData.user_id,
-        plan_name: paymentData.plan_name,
-        duration: duration,
-        amount: paymentData.amount,
-        payment_id: paymentData.id,
-        start_date: startDate.toISOString(),
-        end_date: endDate.toISOString(),
-        status: "ACTIVE",
-      },
-    ])
-    .select()
-    .single();
-
-
-  if (membershipError) {
-
-    console.error(
-      "❌ Membership Insert Error:",
-      membershipError
-    );
-
-  } else {
-
-    console.log(
-      "✅ Membership Created Successfully:",
-      membershipData
-    );
-  }
-
-} else {
-
-  console.log(
-    "ℹ️ Membership already exists:",
-    existingMembership.id
-  );
-}
+        if (membershipError) {
+          console.error(
+            "❌ Membership Insert Error:",
+            membershipError
+          );
+        } else {
+          console.log(
+            "✅ Membership Created Successfully:",
+            membershipData
+          );
+        }
+      } else {
+        console.log(
+          "ℹ️ Membership already exists:",
+          existingMembership.id
+        );
+      }
+    }
 
     // ==========================================
-    // 5. PAYMENT FAILED
+    // 5. PAYMENT FAILED / CANCELLED
     // ==========================================
-
     if (
       status === "FAILED" ||
       status === "CANCELLED"
     ) {
-
       const {
         error: failedUpdateError,
       } = await supabase
@@ -360,11 +356,9 @@ if (!existingMembership) {
           payment_method: paymentMethod,
           updated_at: new Date().toISOString(),
         })
-        .eq("order_id", orderId);
-
+        .eq("id", paymentData.id);
 
       if (failedUpdateError) {
-
         console.error(
           "Failed Payment Update Error:",
           failedUpdateError
@@ -372,12 +366,27 @@ if (!existingMembership) {
       }
     }
 
+    // ==========================================
+    // 6. PENDING
+    // ==========================================
+    if (status === "PENDING") {
+      console.log(
+        "⏳ Payment is still pending. Membership will NOT be created."
+      );
+
+      await supabase
+        .from("payments")
+        .update({
+          payment_status: "pending",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", paymentData.id);
+    }
 
     // ==========================================
-    // 6. RESPONSE
+    // 7. RESPONSE
     // ==========================================
-
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       orderId,
       status,
@@ -385,13 +394,12 @@ if (!existingMembership) {
     });
 
   } catch (error) {
-
     console.error(
       "PhonePe Status Error:",
       error
     );
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Unable to check payment status",
       error: error.message,

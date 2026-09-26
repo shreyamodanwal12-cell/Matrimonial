@@ -31,7 +31,8 @@ const response = await fetch(
         const data = await response.json();
 
         console.log("Payment Status Response:", data);
-
+console.log("PHONEPE STATUS:", data.status);
+console.log("PHONEPE RESPONSE:", data.response);
         if (data.success) {
           setPaymentStatus(data.status);
           setPaymentData(data.response);

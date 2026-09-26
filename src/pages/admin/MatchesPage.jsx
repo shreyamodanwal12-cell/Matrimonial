@@ -4,7 +4,7 @@ function MatchesPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
   const [selectedMatch, setSelectedMatch] = useState(null);
-
+const [finalizingMatch, setFinalizingMatch] = useState(false);
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -12,50 +12,182 @@ function MatchesPage() {
   const API_BASE_URL =
     import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
-  // ============================
-  // FETCH MATCHES
-  // ============================
-  useEffect(() => {
-    const fetchMatches = async () => {
-      try {
-        setLoading(true);
-        setError("");
+ // ============================
+// FETCH MARRIAGE REQUESTS
+// ============================
+useEffect(() => {
+  const fetchMarriageRequests = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-        const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token");
 
-        if (!token) {
-          throw new Error("Admin login token not found.");
-        }
-
-        const response = await fetch(
-          `${API_BASE_URL}/api/interests/admin/matches`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || "Failed to fetch matches");
-        }
-
-        setMatches(data.matches || []);
-      } catch (err) {
-        console.error("Fetch matches error:", err);
-        setError(err.message || "Failed to load matches");
-      } finally {
-        setLoading(false);
+      if (!token) {
+        throw new Error("Admin login token not found.");
       }
-    };
 
-    fetchMatches();
-  }, [API_BASE_URL]);
+      const response = await fetch(
+        `${API_BASE_URL}/api/interests/admin/marriage-requests`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Failed to fetch marriage requests"
+        );
+      }
+
+      setMatches(data.requests || []);
+    } catch (err) {
+      console.error("Fetch marriage requests error:", err);
+      setError(err.message || "Failed to load marriage requests");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchMarriageRequests();
+}, [API_BASE_URL]);
+// ============================
+// FINALIZE MARRIAGE
+// ============================
+const finalizeMarriage = async (matchId) => {
+  try {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      throw new Error("Admin login token not found.");
+    }
+
+    setFinalizingMatch(true);
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/interests/${matchId}/finalize`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.message || "Failed to finalize marriage"
+      );
+    }
+
+    alert("Marriage finalized successfully.");
+
+    // Modal close
+    setSelectedMatch(null);
+
+    // Match list refresh
+    setMatches((prev) =>
+      prev.filter((match) => match.id !== matchId)
+    );
+  } catch (err) {
+    console.error("Finalize marriage error:", err);
+
+    alert(
+      err.message || "Failed to finalize marriage"
+    );
+  } finally {
+    setFinalizingMatch(false);
+  }
+};
+const approveMarriageRequest = async (requestId) => {
+  try {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("Admin login token not found.");
+      return;
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/interests/admin/marriage-requests/${requestId}/approve`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.message || "Failed to approve marriage request"
+      );
+    }
+
+    alert("Marriage finalized successfully.");
+
+    setSelectedMatch(null);
+
+    // List refresh
+    window.location.reload();
+  } catch (error) {
+    console.error("Approve marriage request error:", error);
+    alert(error.message || "Failed to approve marriage request");
+  }
+};
+const rejectMarriageRequest = async (requestId) => {
+  try {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("Admin login token not found.");
+      return;
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/interests/admin/marriage-requests/${requestId}/reject`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.message || "Failed to reject marriage request"
+      );
+    }
+
+    alert("Marriage request rejected successfully.");
+
+    setSelectedMatch(null);
+
+    window.location.reload();
+  } catch (error) {
+    console.error("Reject marriage request error:", error);
+
+    alert(
+      error.message || "Failed to reject marriage request"
+    );
+  }
+};
   // ============================
   // AGE CALCULATOR
   // ============================
@@ -108,8 +240,8 @@ function MatchesPage() {
     const query = search.trim().toLowerCase();
 
     return matches.filter((match) => {
-      const sender = match.sender;
-      const receiver = match.receiver;
+      const sender = match.user1;
+      const receiver = match.user2;
 
       const senderProfile = sender?.matrimonial_profiles;
       const receiverProfile = receiver?.matrimonial_profiles;
@@ -138,7 +270,8 @@ function MatchesPage() {
         );
 
       const matchesStatus =
-        status === "All" || match.status === status;
+  status === "All" ||
+  match.status?.toLowerCase() === status.toLowerCase();
 
       return matchesSearch && matchesStatus;
     });
@@ -148,69 +281,86 @@ function MatchesPage() {
   // REAL STATS
   // ============================
   const totalMatches = matches.length;
+const pendingMatches = matches.filter(
+  (match) => match.status?.toLowerCase() === "pending"
+).length;
 
-  const acceptedMatches = matches.filter(
-    (match) => match.status === "accepted"
-  ).length;
+const approvedMatches = matches.filter(
+  (match) => match.status?.toLowerCase() === "approved"
+).length;
 
-  const pendingMatches = matches.filter(
-    (match) => match.status === "pending"
-  ).length;
+const cancelledMatches = matches.filter((match) =>
+  ["cancelled", "rejected"].includes(
+    match.status?.toLowerCase()
+  )
+).length;
 
-  const rejectedMatches = matches.filter(
-    (match) => match.status === "rejected"
-  ).length;
+const rejectedMatches = matches.filter(
+  (match) => match.status?.toLowerCase() === "rejected"
+).length;
 
   const successRate =
     totalMatches > 0
-      ? ((acceptedMatches / totalMatches) * 100).toFixed(1)
+      ? ((approvedMatches / totalMatches) * 100).toFixed(1)
       : "0.0";
 
   // ============================
   // STATUS LABEL
   // ============================
-  const getStatusLabel = (matchStatus) => {
-    if (!matchStatus) return "Unknown";
+const getStatusLabel = (matchStatus) => {
+  if (!matchStatus) return "Unknown";
 
-    switch (matchStatus.toLowerCase()) {
-      case "accepted":
-        return "Accepted";
+  switch (matchStatus.toLowerCase()) {
+    case "accepted":
+      return "Accepted";
 
-      case "pending":
-        return "Pending";
+    case "pending":
+      return "Pending";
 
-      case "rejected":
-        return "Rejected";
+    case "rejected":
+      return "Rejected";
 
-      case "closed":
-        return "Closed";
+    case "cancelled":
+      return "Cancelled";
 
-      default:
-        return matchStatus.charAt(0).toUpperCase() + matchStatus.slice(1);
-    }
-  };
+    case "closed":
+      return "Closed";
+
+    case "approved":
+      return "Approved";
+
+    default:
+      return matchStatus.charAt(0).toUpperCase() + matchStatus.slice(1);
+  }
+};
 
   // ============================
   // STATUS STYLE
   // ============================
-  const getStatusClass = (matchStatus) => {
-    switch (matchStatus?.toLowerCase()) {
-      case "accepted":
-        return "bg-[#e7f6ed] text-[#287b51]";
+const getStatusClass = (matchStatus) => {
+  switch (matchStatus?.toLowerCase()) {
+    case "accepted":
+      return "bg-[#e7f6ed] text-[#287b51]";
 
-      case "pending":
-        return "bg-[#fff1d8] text-[#b36b11]";
+    case "pending":
+      return "bg-[#fff1d8] text-[#b36b11]";
 
-      case "rejected":
-        return "bg-[#f8e3e3] text-[#b63b3b]";
+    case "rejected":
+      return "bg-[#f8e3e3] text-[#b63b3b]";
 
-      case "closed":
-        return "bg-[#eeeeee] text-[#666666]";
+    case "cancelled":
+      return "bg-[#eeeeee] text-[#666666]";
 
-      default:
-        return "bg-[#f4e8dc] text-[#806653]";
-    }
-  };
+    case "closed":
+      return "bg-[#eeeeee] text-[#666666]";
+
+    case "approved":
+      return "bg-[#e7f6ed] text-[#287b51]";
+
+    default:
+      return "bg-[#f4e8dc] text-[#806653]";
+  }
+};
 
   // ============================
   // PROFILE PHOTO
@@ -336,7 +486,7 @@ function MatchesPage() {
         {/* STATS */}
         {/* ===================================================== */}
 
-        <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-5">
 
           {/* Total */}
 
@@ -366,7 +516,7 @@ function MatchesPage() {
             </p>
 
             <p className="mt-1 font-serif text-[27px] font-semibold text-[#287b51]">
-              {loading ? "..." : acceptedMatches}
+              {loading ? "..." : approvedMatches}
             </p>
 
             <p className="mt-1 text-[8px] text-[#9a806f]">
@@ -394,7 +544,23 @@ function MatchesPage() {
 
           </div>
 
+{/* Cancelled */}
 
+<div className="rounded-xl border border-[#eadfce] bg-white p-5">
+
+  <p className="text-[9px] text-[#9a806f]">
+  Cancelled / Rejected
+</p>
+
+  <p className="mt-1 font-serif text-[27px] font-semibold text-[#666666]">
+    {loading ? "..." : cancelledMatches}
+  </p>
+
+  <p className="mt-1 text-[8px] text-[#9a806f]">
+  Cancelled or rejected requests
+</p>
+
+</div>
           {/* Success */}
 
           <div className="rounded-xl border border-[#eadfce] bg-white p-5">
@@ -451,25 +617,11 @@ function MatchesPage() {
               className="h-10 rounded-lg border border-[#eadfce] bg-[#fffaf5] px-3 text-[10px] text-[#563927] outline-none focus:border-[#c58a25]"
             >
 
-              <option value="All">
-                All Matches
-              </option>
-
-              <option value="accepted">
-                Accepted
-              </option>
-
-              <option value="pending">
-                Pending
-              </option>
-
-              <option value="rejected">
-                Rejected
-              </option>
-
-              <option value="closed">
-                Closed
-              </option>
+              <option value="All">All Matches</option>
+<option value="pending">Pending</option>
+<option value="approved">Approved</option>
+<option value="cancelled">Cancelled</option>
+<option value="rejected">Rejected</option>
 
             </select>
 
@@ -560,8 +712,8 @@ function MatchesPage() {
 
                   {filteredMatches.map((match) => {
 
-                    const sender = match.sender;
-                    const receiver = match.receiver;
+                    const sender = match.user1;
+                    const receiver = match.user2;
 
                     const senderProfile =
                       sender?.matrimonial_profiles;
@@ -676,10 +828,9 @@ function MatchesPage() {
 
                         {/* Match Date */}
 
-                        <td className="px-4 py-4 text-[10px] text-[#806653]">
-                          {formatDate(match.created_at)}
-                        </td>
-
+                       <td className="px-4 py-4 text-[10px] text-[#806653]">
+  {formatDate(match.requested_at || match.created_at)}
+</td>
 
                         {/* Status */}
 
@@ -733,8 +884,8 @@ function MatchesPage() {
 
               {filteredMatches.map((match) => {
 
-                const sender = match.sender;
-                const receiver = match.receiver;
+                const sender = match.user1;
+                const receiver = match.user2;
 
                 const senderProfile =
                   sender?.matrimonial_profiles;
@@ -865,24 +1016,28 @@ function MatchesPage() {
                             Match Date
                           </p>
 
-                          <p className="mt-0.5 text-[9px] text-[#806653]">
-                            {formatDate(match.created_at)}
-                          </p>
+                         <p className="mt-0.5 text-[9px] text-[#806653]">
+  {formatDate(match.requested_at || match.created_at)}
+</p>
 
                         </div>
 
 
                         <div>
 
-                          <p className="text-[8px] text-[#9a806f]">
-                            Status
-                          </p>
+  <p className="text-[8px] text-[#9a806f]">
+    Status
+  </p>
 
-                          <p className="mt-0.5 text-[9px] font-semibold text-[#287b51]">
-                            {getStatusLabel(match.status)}
-                          </p>
+  <p
+    className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[8px] font-semibold ${getStatusClass(
+      match.status
+    )}`}
+  >
+    {getStatusLabel(match.status)}
+  </p>
 
-                        </div>
+</div>
 
                       </div>
 
@@ -987,7 +1142,7 @@ function MatchesPage() {
                   <div className="flex justify-center">
 
                     <ProfileAvatar
-                      person={selectedMatch.sender}
+                      person={selectedMatch.user1}
                       type="sender"
                       large
                     />
@@ -995,35 +1150,35 @@ function MatchesPage() {
                   </div>
 
                   <h4 className="mt-3 font-serif text-[18px] font-semibold text-[#4a1712]">
-                    {selectedMatch.sender?.full_name ||
+                    {selectedMatch.user1?.full_name ||
                       "Unknown"}
                   </h4>
 
                   <p className="mt-1 text-[9px] text-[#806653]">
                     {calculateAge(
-                      selectedMatch.sender?.matrimonial_profiles
+                      selectedMatch.user1?.matrimonial_profiles
                         ?.birth_date
                     )}{" "}
                     years
                   </p>
 
                   <p className="mt-1 text-[9px] text-[#806653]">
-                    {selectedMatch.sender?.matrimonial_profiles
+                    {selectedMatch.user1?.matrimonial_profiles
                       ?.profession || "Profession N/A"}
                   </p>
 
                   <p className="mt-1 text-[9px] text-[#806653]">
                     📍{" "}
-                    {selectedMatch.sender?.matrimonial_profiles
+                    {selectedMatch.user1?.matrimonial_profiles
                       ?.state ||
-                      selectedMatch.sender?.matrimonial_profiles
+                      selectedMatch.user1?.matrimonial_profiles
                         ?.address ||
                       "Location N/A"}
                   </p>
 
                   <p className="mt-1 text-[9px] text-[#806653]">
                     🎓{" "}
-                    {selectedMatch.sender?.matrimonial_profiles
+                    {selectedMatch.user1?.matrimonial_profiles
                       ?.education || "Education N/A"}
                   </p>
 
@@ -1044,7 +1199,7 @@ function MatchesPage() {
                   <div className="flex justify-center">
 
                     <ProfileAvatar
-                      person={selectedMatch.receiver}
+                      person={selectedMatch.user2}
                       type="receiver"
                       large
                     />
@@ -1052,35 +1207,35 @@ function MatchesPage() {
                   </div>
 
                   <h4 className="mt-3 font-serif text-[18px] font-semibold text-[#4a1712]">
-                    {selectedMatch.receiver?.full_name ||
+                    {selectedMatch.user2?.full_name ||
                       "Unknown"}
                   </h4>
 
                   <p className="mt-1 text-[9px] text-[#806653]">
                     {calculateAge(
-                      selectedMatch.receiver?.matrimonial_profiles
+                      selectedMatch.user2?.matrimonial_profiles
                         ?.birth_date
                     )}{" "}
                     years
                   </p>
 
                   <p className="mt-1 text-[9px] text-[#806653]">
-                    {selectedMatch.receiver?.matrimonial_profiles
+                    {selectedMatch.user2?.matrimonial_profiles
                       ?.profession || "Profession N/A"}
                   </p>
 
                   <p className="mt-1 text-[9px] text-[#806653]">
                     📍{" "}
-                    {selectedMatch.receiver?.matrimonial_profiles
+                    {selectedMatch.user2?.matrimonial_profiles
                       ?.state ||
-                      selectedMatch.receiver?.matrimonial_profiles
+                      selectedMatch.user2?.matrimonial_profiles
                         ?.address ||
                       "Location N/A"}
                   </p>
 
                   <p className="mt-1 text-[9px] text-[#806653]">
                     🎓{" "}
-                    {selectedMatch.receiver?.matrimonial_profiles
+                    {selectedMatch.user2?.matrimonial_profiles
                       ?.education || "Education N/A"}
                   </p>
 
@@ -1101,8 +1256,8 @@ function MatchesPage() {
 
                   <p className="mt-1 text-[10px] font-medium text-[#4f3425]">
                     {formatDate(
-                      selectedMatch.created_at
-                    )}
+  selectedMatch.requested_at
+)}
                   </p>
 
                 </div>
@@ -1148,15 +1303,59 @@ function MatchesPage() {
               </div>
 
 
-              {/* Close */}
+              {/* Approve + Close Buttons */}
 
-              <button
-                type="button"
-                onClick={() => setSelectedMatch(null)}
-                className="mt-5 w-full rounded-lg bg-[#8c1d18] py-2.5 text-[10px] font-semibold text-white transition hover:bg-[#701510]"
-              >
-                Close
-              </button>
+<div className="mt-5 flex gap-3">
+{selectedMatch.status === "Pending" && (
+  <button
+    type="button"
+    onClick={() => {
+      const confirmed = window.confirm(
+        "Are you sure you want to reject this marriage request?"
+      );
+
+      if (confirmed) {
+        rejectMarriageRequest(selectedMatch.id);
+      }
+    }}
+    className="flex-1 rounded-lg bg-[#b63b3b] py-2.5 text-[10px] font-semibold text-white transition hover:bg-[#963030]"
+  >
+    ✕ Reject Marriage
+  </button>
+)}
+  {/* Approve Marriage */}
+  {selectedMatch.status === "Pending" && (
+    <button
+      type="button"
+      onClick={() => {
+        const confirmed = window.confirm(
+          "Are you sure you want to finalize this marriage? Both profiles will be hidden from public listings."
+        );
+
+        if (confirmed) {
+          approveMarriageRequest(selectedMatch.id);
+        }
+      }}
+      className="flex-1 rounded-lg bg-[#2f7d32] py-2.5 text-[10px] font-semibold text-white transition hover:bg-[#256628]"
+    >
+      ✓ Approve Marriage
+    </button>
+  )}
+
+  {/* Close */}
+  <button
+    type="button"
+    onClick={() => setSelectedMatch(null)}
+    className={`rounded-lg bg-[#8c1d18] py-2.5 text-[10px] font-semibold text-white transition hover:bg-[#701510] ${
+      selectedMatch.status === "Pending"
+        ? "flex-1"
+        : "w-full"
+    }`}
+  >
+    Close
+  </button>
+
+</div>
 
             </div>
 

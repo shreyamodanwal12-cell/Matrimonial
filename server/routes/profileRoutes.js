@@ -10,6 +10,7 @@ import {
    uploadDocumentPhoto,
    checkAadharVerification,
   updateProfileStatus,
+  updateAadharVerification,
   updateMyMatrimonialProfile,
   updateMyFamilyDetails,
    hideProfile,
@@ -18,7 +19,9 @@ import {
     reportProfile,
     getMyReports,
     getAllProfileReports,
-
+    getMyNotificationCount,
+    getMyNotifications,
+   markProfileViewNotificationAsRead,
 } from "../controllers/profileController.js";
 
 import authMiddleware from "../middleware/authMiddleware.js";
@@ -112,7 +115,16 @@ router.patch(
   adminMiddleware,
   updateProfileStatus
 );
+// ========================================
+// UPDATE AADHAAR VERIFICATION STATUS
+// ========================================
 
+router.patch(
+  "/:id/aadhaar-verification",
+  authMiddleware,
+  adminMiddleware,
+  updateAadharVerification
+);
 
 // ========================================
 // UPDATE MATRIMONIAL PROFILE
@@ -154,6 +166,21 @@ router.get(
   authMiddleware,
   adminMiddleware,
   getAllProfileReports
+);
+router.get(
+  "/notifications/count",
+  authMiddleware,
+  getMyNotificationCount
+);
+router.get(
+  "/notifications",
+  authMiddleware,
+  getMyNotifications
+);
+router.patch(
+  "/notifications/:id/read",
+  authMiddleware,
+  markProfileViewNotificationAsRead
 );
 router.get("/:userId", authMiddleware, membershipMiddleware, getPublicProfile);
 export default router;
