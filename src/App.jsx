@@ -31,6 +31,7 @@ import InterestRequestsPage from "./pages/InterestRequestsPage";
 import MyInterestsPage from "./pages/MyInterestsPage";
 import AccountActivityPage from "./pages/AccountActivityPage";
 import NotificationsPage from "./pages/NotificationsPage";
+import EditMemberPage from "./pages/admin/EditMemberPage";
 
 function App() {
   const path = window.location.pathname;
@@ -258,7 +259,19 @@ if (path === "/admin/testimonials") {
 }
 
 
+// Admin Edit Member
+if (path.startsWith("/admin/members/edit/")) {
+  if (!isAdmin) {
+    window.location.href = "/login";
+    return null;
+  }
 
+  return (
+    <AdminLayout>
+      <EditMemberPage />
+    </AdminLayout>
+  );
+}
   return <HomePage />;
 }
 

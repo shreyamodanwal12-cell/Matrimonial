@@ -13,13 +13,19 @@ function AadhaarVerificationPage() {
   // STATES
   // =========================================
 
-  const [formData, setFormData] = useState({
-    aadhaarNumber: "",
-    aadhaarFile: null,
-    photo_1: null,
-    photo_2: null,
-    photo_3: null,
-  });
+ const [formData, setFormData] = useState({
+  aadhaarNumber: "",
+  aadhaarFile: null,
+
+  passport: null,
+  pan_card: null,
+  driving_license: null,
+  voter_id: null,
+
+  photo_1: null,
+  photo_2: null,
+  photo_3: null,
+});
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -95,7 +101,16 @@ useEffect(() => {
 
     setError("");
   };
+const handleIdentityDocumentChange = (e) => {
+  const { name, files } = e.target;
 
+  setFormData((prev) => ({
+    ...prev,
+    [name]: files[0] || null,
+  }));
+
+  setError("");
+};
 
   // =========================================
   // SUBMIT
@@ -253,10 +268,66 @@ console.log("Aadhaar Token:", token);
             "Aadhaar upload failed"
         );
       }
+// =====================================
+// 2. UPLOAD OPTIONAL IDENTITY DOCUMENTS
+// =====================================
 
+const identityDocuments = [
+  "passport",
+  "pan_card",
+  "driving_license",
+  "voter_id",
+];
+
+for (const documentType of identityDocuments) {
+
+  // Optional document hai, isliye agar file nahi hai
+  // to upload nahi karna hai
+  if (!formData[documentType]) {
+    continue;
+  }
+
+  const documentFormData = new FormData();
+
+  documentFormData.append(
+    "document",
+    formData[documentType]
+  );
+
+  const documentResponse = await fetch(
+    `${API_BASE_URL}/api/profiles/documents/identity/${documentType}`,
+    {
+      method: "POST",
+
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+
+      body: documentFormData,
+    }
+  );
+
+  const documentData =
+    await documentResponse.json();
+
+  console.log(
+    `${documentType} Response:`,
+    documentData
+  );
+
+  if (
+    !documentResponse.ok ||
+    !documentData.success
+  ) {
+    throw new Error(
+      documentData.message ||
+        `${documentType} upload failed`
+    );
+  }
+}
 
       // =====================================
-      // 2. UPLOAD 3 PHOTOS
+      // 3. UPLOAD 3 PHOTOS
       // =====================================
 
       for (
@@ -378,7 +449,7 @@ window.location.href = "/login";
               </div>
 
               <div className="text-[9px] font-semibold text-[#ffc400] tracking-[1px] mt-[3px]">
-                MATRIMONIAL GULBARGA
+                MATRIMONIAL Kalburagi
               </div>
 
             </div>
@@ -537,7 +608,95 @@ window.location.href = "/login";
 
             </div>
 
+{/* OPTIONAL IDENTITY DOCUMENTS */}
 
+<div className="mb-5">
+
+  <h3 className="font-serif text-[15px] text-[#222] mb-1">
+    Additional Identity Documents
+  </h3>
+
+  <p className="text-[9px] text-[#777] mb-4">
+    These documents are optional. You may upload any document you have.
+  </p>
+
+
+  {/* PASSPORT */}
+
+  <div className="mb-4">
+
+    <label className={labelClass}>
+      Passport <span className="text-[#999]">(Optional)</span>
+    </label>
+
+    <input
+      type="file"
+      name="passport"
+      accept=".jpg,.jpeg,.png,.pdf"
+      onChange={handleIdentityDocumentChange}
+      className="w-full text-[10px] text-[#555] border border-[#f2c65c] rounded-[6px] bg-white p-[7px]"
+    />
+
+  </div>
+
+
+  {/* PAN CARD */}
+
+  <div className="mb-4">
+
+    <label className={labelClass}>
+      PAN Card <span className="text-[#999]">(Optional)</span>
+    </label>
+
+    <input
+      type="file"
+      name="pan_card"
+      accept=".jpg,.jpeg,.png,.pdf"
+      onChange={handleIdentityDocumentChange}
+      className="w-full text-[10px] text-[#555] border border-[#f2c65c] rounded-[6px] bg-white p-[7px]"
+    />
+
+  </div>
+
+
+  {/* DRIVING LICENCE */}
+
+  <div className="mb-4">
+
+    <label className={labelClass}>
+      Driving Licence <span className="text-[#999]">(Optional)</span>
+    </label>
+
+    <input
+      type="file"
+      name="driving_license"
+      accept=".jpg,.jpeg,.png,.pdf"
+      onChange={handleIdentityDocumentChange}
+      className="w-full text-[10px] text-[#555] border border-[#f2c65c] rounded-[6px] bg-white p-[7px]"
+    />
+
+  </div>
+
+
+  {/* VOTER ID */}
+
+  <div>
+
+    <label className={labelClass}>
+      Voter ID <span className="text-[#999]">(Optional)</span>
+    </label>
+
+    <input
+      type="file"
+      name="voter_id"
+      accept=".jpg,.jpeg,.png,.pdf"
+      onChange={handleIdentityDocumentChange}
+      className="w-full text-[10px] text-[#555] border border-[#f2c65c] rounded-[6px] bg-white p-[7px]"
+    />
+
+  </div>
+
+</div>
             {/* PHOTO 1 */}
 
             <div className="mb-5">

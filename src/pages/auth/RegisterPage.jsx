@@ -123,7 +123,7 @@ const handleSubmit = async (e) => {
               </div>
 
               <div className="text-[9px] font-semibold text-[#ffc400] tracking-[1px] mt-[3px]">
-                MATRIMONIAL GULBARGA
+                MATRIMONIAL Kalburagi
               </div>
 
             </div>

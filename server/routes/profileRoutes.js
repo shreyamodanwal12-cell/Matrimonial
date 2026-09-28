@@ -7,7 +7,8 @@ import {
   uploadProfilePhoto,
   uploadCertificate,
   uploadAadharCard,
-   uploadDocumentPhoto,
+uploadIdentityDocument,
+uploadDocumentPhoto,
    checkAadharVerification,
   updateProfileStatus,
   updateAadharVerification,
@@ -97,7 +98,16 @@ router.post(
   upload.single("aadhaarFile"),
   uploadAadharCard
 );
+// ========================================
+// UPLOAD OPTIONAL IDENTITY DOCUMENT
+// ========================================
 
+router.post(
+  "/documents/identity/:documentType",
+  authMiddleware,
+  upload.single("document"),
+  uploadIdentityDocument
+);
 
 router.post(
   "/documents/photo/:photoNumber",

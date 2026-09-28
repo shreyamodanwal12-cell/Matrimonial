@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import API_BASE_URL from "../api/api";
+import logo from "../assets/logo.jpeg";
 
 function Navbar() {
   const [open, setOpen] = useState(false);
@@ -420,9 +421,13 @@ function Navbar() {
           href="#home"
           className="flex items-center gap-3"
         >
-          <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-[#d7a744] bg-[#8c1d18] text-[24px] text-[#f5c45e]">
-            ॐ
-          </div>
+          <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border-2 border-[#d7a744] bg-white">
+  <img
+    src={logo}
+    alt="Shiva Parvati Matrimonial Logo"
+    className="h-full w-full object-cover"
+  />
+</div>
 
           <div className="leading-none">
             <h2 className="font-serif text-[25px] font-semibold text-[#751b17]">

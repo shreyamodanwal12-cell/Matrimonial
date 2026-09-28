@@ -4,7 +4,7 @@ function AdminDashboard() {
   const [profiles, setProfiles] = useState([]);
 const [loading, setLoading] = useState(true);
 const [error, setError] = useState("");
-
+const [search, setSearch] = useState("");
 
 useEffect(() => {
   fetchDashboardData();
@@ -306,10 +306,23 @@ if (error) {
             </span>
 
             <input
-              type="text"
-              placeholder="Search..."
-              className="h-9 w-[130px] bg-transparent px-2 text-[10px] outline-none placeholder:text-[#b5a293]"
-            />
+  type="text"
+  value={search}
+  onChange={(e) => setSearch(e.target.value)}
+  onKeyDown={(e) => {
+    if (e.key === "Enter") {
+      const value = search.trim();
+
+      if (value) {
+        window.location.href = `/admin/profiles?search=${encodeURIComponent(value)}`;
+      } else {
+        window.location.href = "/admin/profiles";
+      }
+    }
+  }}
+  placeholder="Search..."
+  className="h-9 w-[130px] bg-transparent px-2 text-[10px] outline-none placeholder:text-[#b5a293]"
+/>
 
           </div>
 

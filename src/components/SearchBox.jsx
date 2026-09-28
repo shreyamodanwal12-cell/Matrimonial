@@ -159,7 +159,7 @@ onChange={(e) =>
   }
               >
                 <option>All Locations</option>
-                <option>Gulbarga</option>
+                <option>Kalburagi</option>
                 <option>Bangalore</option>
                 <option>Hyderabad</option>
                 <option>Mumbai</option>

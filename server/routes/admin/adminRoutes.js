@@ -1,6 +1,12 @@
 import express from "express";
+
 import authMiddleware from "../../middleware/authMiddleware.js";
 import adminMiddleware from "../../middleware/adminMiddleware.js";
+
+import {
+  getMemberForAdmin,
+  updateMember,
+} from "../../controllers/adminController.js";
 
 const router = express.Router();
 
@@ -15,6 +21,22 @@ router.get(
       user: req.user,
     });
   }
+);
+
+// Get single member for admin edit
+router.get(
+  "/members/:id",
+  authMiddleware,
+  adminMiddleware,
+  getMemberForAdmin
+);
+
+// Update member
+router.put(
+  "/members/:id",
+  authMiddleware,
+  adminMiddleware,
+  updateMember
 );
 
 export default router;

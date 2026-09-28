@@ -97,16 +97,19 @@ payments (
   expires_at,
   created_at
 ),
-          profile_documents (
+  profile_documents (
   aadhar_card,
+  passport,
+  pan_card,
+  driving_license,
+  voter_id,
   photo_1,
   photo_2,
   photo_3,
   verification_status,
   verification_note,
   verified_at
-)
-      `)
+)    `)
       .eq("role", "user")
   .order("created_at", { ascending: false });
 
@@ -670,6 +673,217 @@ export const uploadAadharCard = async (req, res) => {
     });
   }
 };
+
+// ======================================================
+// UPLOAD OPTIONAL IDENTITY DOCUMENT
+// ======================================================
+
+export const uploadIdentityDocument = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { documentType } = req.params;
+
+    // Allowed optional documents
+    const allowedDocuments = [
+      "passport",
+      "pan_card",
+      "driving_license",
+      "voter_id",
+    ];
+
+    if (!allowedDocuments.includes(documentType)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid identity document type",
+      });
+    }
+
+    // File required when this endpoint is called
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Document file is required",
+      });
+    }
+
+    // Allowed file types
+    const allowedTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "application/pdf",
+    ];
+
+    if (!allowedTypes.includes(req.file.mimetype)) {
+      return res.status(400).json({
+        success: false,
+        message: "Only JPG, PNG or PDF files are allowed",
+      });
+    }
+
+    // Maximum 5 MB
+    if (req.file.size > 5 * 1024 * 1024) {
+      return res.status(400).json({
+        success: false,
+        message: "Document file must be less than 5 MB",
+      });
+    }
+
+    // File extension
+    const fileExt = req.file.originalname
+      .split(".")
+      .pop()
+      .toLowerCase();
+
+    const fileName =
+      `${userId}-${documentType}-${Date.now()}.${fileExt}`;
+
+    const filePath = `${userId}/${fileName}`;
+
+    // Upload to private Supabase bucket
+    const { error: uploadError } =
+      await supabase.storage
+        .from("identity-documents")
+        .upload(
+          filePath,
+          req.file.buffer,
+          {
+            contentType: req.file.mimetype,
+            upsert: true,
+          }
+        );
+
+    if (uploadError) {
+      console.error(
+        "Identity document upload error:",
+        uploadError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to upload identity document",
+      });
+    }
+
+    // Create signed URL
+    const {
+      data: signedUrlData,
+      error: signedUrlError,
+    } = await supabase.storage
+      .from("identity-documents")
+      .createSignedUrl(
+        filePath,
+        60 * 60
+      );
+
+    if (signedUrlError) {
+      console.error(
+        "Identity document signed URL error:",
+        signedUrlError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to create document URL",
+      });
+    }
+
+    const documentUrl =
+      signedUrlData.signedUrl;
+
+    // Check existing profile_documents record
+    const {
+      data: existingDocument,
+      error: findError,
+    } = await supabase
+      .from("profile_documents")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (findError) {
+      console.error(
+        "Find profile document error:",
+        findError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to find profile document",
+      });
+    }
+
+    let document;
+    let databaseError;
+
+    if (existingDocument) {
+
+      // Update selected document
+      const result = await supabase
+        .from("profile_documents")
+        .update({
+          [documentType]: documentUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId)
+        .select()
+        .single();
+
+      document = result.data;
+      databaseError = result.error;
+
+    } else {
+
+      // Create profile_documents record
+      const result = await supabase
+        .from("profile_documents")
+        .insert([
+          {
+            user_id: userId,
+            [documentType]: documentUrl,
+          },
+        ])
+        .select()
+        .single();
+
+      document = result.data;
+      databaseError = result.error;
+    }
+
+    if (databaseError) {
+      console.error(
+        "Identity document database error:",
+        databaseError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Document uploaded but database update failed",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message:
+        `${documentType} uploaded successfully`,
+      document,
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Upload identity document error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 
 // ======================================================
 // UPLOAD PROFILE DOCUMENT PHOTO

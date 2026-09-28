@@ -543,7 +543,7 @@ const handleSaveFamily = async () => {
               </div>
 
               <div className="mt-[3px] text-[9px] font-semibold tracking-[1px] text-[#ffc400]">
-                MATRIMONIAL GULBARGA
+                MATRIMONIAL Kalburagi
               </div>
 
             </div>

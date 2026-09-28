@@ -4,7 +4,7 @@ import API_BASE_URL from "../api/api";
 function FeaturedProfiles({ filters }) {
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState("");         
   const [hasMembership, setHasMembership] = useState(false);
 
   useEffect(() => {

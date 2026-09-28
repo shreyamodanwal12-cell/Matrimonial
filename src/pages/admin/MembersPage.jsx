@@ -211,13 +211,11 @@ function MembersPage() {
 
   // ================= EDIT =================
   const handleEdit = (member) => {
-    console.log("Edit Member:", member);
+  console.log("Edit Member:", member);
 
-    // For now open existing profile management page
-    window.location.href =
-      "/admin/profiles";
-  };
-
+  window.location.href =
+    `/admin/members/edit/${member.id}`;
+};
   // ================= ADD MEMBER =================
   const handleAddMember = () => {
     // Registration/profile creation flow

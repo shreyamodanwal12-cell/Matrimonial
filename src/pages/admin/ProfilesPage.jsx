@@ -2,8 +2,12 @@ import { useEffect, useState } from "react";
 import API_BASE_URL from "../../api/api";
 
 function ProfilesPage() {
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("All");
+  const [search, setSearch] = useState(() => {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("search") || "";
+});
+
+const [status, setStatus] = useState("All");
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [selectedMembership, setSelectedMembership] = useState(null);
   const [profiles, setProfiles] = useState([]);
@@ -1197,7 +1201,110 @@ const filteredProfiles = profiles.filter((profile) => {
 
 )}
 </div> 
+{/* ================= ADDITIONAL IDENTITY DOCUMENTS ================= */}
 
+<div className="mt-4 rounded-lg border border-[#eadfce] p-4">
+
+  <p className="text-[12px] font-semibold text-[#7a1f1f]">
+    Additional Identity Documents
+  </p>
+
+  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+    {/* Passport */}
+    <div className="rounded-md border border-[#eadfce] bg-[#fffaf3] p-3">
+      <p className="text-[11px] font-semibold text-[#555]">
+        Passport
+      </p>
+
+      {selectedProfile.profile_documents?.passport ? (
+        <a
+          href={selectedProfile.profile_documents.passport}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 inline-block text-[10px] font-semibold text-[#8b5e00] underline"
+        >
+          View Passport
+        </a>
+      ) : (
+        <p className="mt-2 text-[10px] text-[#999]">
+          Not uploaded
+        </p>
+      )}
+    </div>
+
+
+    {/* PAN Card */}
+    <div className="rounded-md border border-[#eadfce] bg-[#fffaf3] p-3">
+      <p className="text-[11px] font-semibold text-[#555]">
+        PAN Card
+      </p>
+
+      {selectedProfile.profile_documents?.pan_card ? (
+        <a
+          href={selectedProfile.profile_documents.pan_card}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 inline-block text-[10px] font-semibold text-[#8b5e00] underline"
+        >
+          View PAN Card
+        </a>
+      ) : (
+        <p className="mt-2 text-[10px] text-[#999]">
+          Not uploaded
+        </p>
+      )}
+    </div>
+
+
+    {/* Driving Licence */}
+    <div className="rounded-md border border-[#eadfce] bg-[#fffaf3] p-3">
+      <p className="text-[11px] font-semibold text-[#555]">
+        Driving Licence
+      </p>
+
+      {selectedProfile.profile_documents?.driving_license ? (
+        <a
+          href={selectedProfile.profile_documents.driving_license}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 inline-block text-[10px] font-semibold text-[#8b5e00] underline"
+        >
+          View Driving Licence
+        </a>
+      ) : (
+        <p className="mt-2 text-[10px] text-[#999]">
+          Not uploaded
+        </p>
+      )}
+    </div>
+
+
+    {/* Voter ID */}
+    <div className="rounded-md border border-[#eadfce] bg-[#fffaf3] p-3">
+      <p className="text-[11px] font-semibold text-[#555]">
+        Voter ID
+      </p>
+
+      {selectedProfile.profile_documents?.voter_id ? (
+        <a
+          href={selectedProfile.profile_documents.voter_id}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 inline-block text-[10px] font-semibold text-[#8b5e00] underline"
+        >
+          View Voter ID
+        </a>
+      ) : (
+        <p className="mt-2 text-[10px] text-[#999]">
+          Not uploaded
+        </p>
+      )}
+    </div>
+
+  </div>
+
+</div>
 </div>
 {/* Certificate */}
 <div className="mt-4 rounded-lg border border-[#eadfce] p-4">

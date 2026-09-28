@@ -115,25 +115,41 @@ function Footer() {
 
                 <div className="text-[11px] leading-5 text-[#d8bfae]">
 
-                  <a
-                    href="tel:9632592555"
-                    className="block hover:text-[#f5c45e]"
-                  >
-                    9632592555
-                  </a>
+                 <a
+  href="tel:9632592555"
+  className="block hover:text-[#f5c45e]"
+>
+  9632592555
+</a>
 
-                  <a
-                    href="tel:9448388711"
-                    className="block hover:text-[#f5c45e]"
-                  >
-                    9448388711
-                  </a>
+<a
+  href="tel:8217453806"
+  className="block hover:text-[#f5c45e]"
+>
+  8217453806
+</a>
 
                 </div>
 
               </div>
 
+{/* WhatsApp */}
+<div className="flex items-start gap-3">
 
+  <span className="mt-0.5 text-[#f5c45e]">
+    💬
+  </span>
+
+  <a
+    href="https://wa.me/918217453806"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-[11px] leading-5 text-[#d8bfae] hover:text-[#f5c45e]"
+  >
+    WhatsApp: 8217453806
+  </a>
+
+</div>
               {/* Email */}
               <div className="flex items-start gap-3">
 
@@ -142,10 +158,10 @@ function Footer() {
                 </span>
 
                 <a
-                  href="mailto:support@shivaparvatimatrimonialgulburga.com"
+                  href="mailto:support@shivaparvatimatrimonial.com"
                   className="break-all text-[11px] leading-5 text-[#d8bfae] hover:text-[#f5c45e]"
                 >
-                  support@shivaparvatimatrimonialgulburga.com
+                  support@shivaparvatimatrimonial.com
                 </a>
 
               </div>
@@ -162,7 +178,7 @@ function Footer() {
                   Ashwini Nivas, Plot No. 213/1,
                   NGO&apos;S Colony, New Jewargi Road,
                   Opp. Old Venkatagiri Hotel &amp; Kalmeshwar,
-                  Kalaburagi - 585102, Karnataka
+                  Kalburagi - 585102, Karnataka
                 </p>
 
               </div>
