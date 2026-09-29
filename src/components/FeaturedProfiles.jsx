@@ -9,7 +9,7 @@ function FeaturedProfiles({ filters }) {
 
   useEffect(() => {
   checkMembershipAndFetchProfiles();
-}, [filters]);
+}, [JSON.stringify(filters)]);
 
   const checkMembershipAndFetchProfiles = async () => {
     try {
@@ -60,27 +60,28 @@ let profileLimit;
 
 // FREE USER
 if (!membership) {
-  profileLimit = 5;
+  profileLimit = 20;
 
   console.log("User Plan: Free");
   console.log("Allowed Profile Limit:", profileLimit);
 }
 
-// PAID USER
-else if (membership.plan_name === "Basic") {
-  profileLimit = 10;
-}
+// GOLD USER
 
-else if (membership.plan_name === "Premium") {
+else if (membership.plan_name === "Gold") {
+
   profileLimit = 50;
+
 }
 
-else if (membership.plan_name === "Royal") {
+// DIAMOND USER
+else if (membership.plan_name === "Diamond") {
   profileLimit = Infinity;
 }
 
+// UNKNOWN / OTHER
 else {
-  profileLimit = 5;
+  profileLimit = 20;
 }
 
 console.log(
@@ -97,20 +98,18 @@ if (membership) {
   const membershipStatus =
     membership.status?.toUpperCase();
 
-  const expiryDate = membership.end_date
-    ? new Date(membership.end_date)
-    : null;
+  // const expiryDate = membership.end_date
+  //   ? new Date(membership.end_date)
+  //   : null;
 
   const isActive =
-    membershipStatus === "ACTIVE" &&
-    expiryDate &&
-    expiryDate >= new Date();
+  membershipStatus === "ACTIVE";
 
-  // Paid membership expired/inactive
+ // Membership inactive
   if (!isActive) {
     // Treat user as FREE user
-    profileLimit = 5;
-    console.log("Membership expired/inactive");
+    profileLimit = 20;
+    console.log("Membership inactive");
     console.log("Free Profile Limit:", profileLimit);
   }
 }
@@ -151,7 +150,8 @@ console.log(
       
 
 const allProfiles = data.profiles || [];
-
+console.log("📱 HOME PROFILES:", data.profiles);
+console.log("📱 HOME PROFILE COUNT:", data.profiles?.length);
 let filteredProfiles = allProfiles;
 
 // --------------------------------
@@ -383,9 +383,19 @@ console.log("Filtered Profiles:", filteredProfiles);
   // LOADING
   // --------------------------------
   if (loading) {
-  return null;
+  return (
+    <section
+      id="profiles"
+      className="bg-[#fffaf2] px-4 py-16"
+    >
+      <div className="mx-auto max-w-[1180px] text-center">
+        <p className="text-[13px] text-[#806653]">
+          Loading profiles...
+        </p>
+      </div>
+    </section>
+  );
 }
-
   
 
   // --------------------------------

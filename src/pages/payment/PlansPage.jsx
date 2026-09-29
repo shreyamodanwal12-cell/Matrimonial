@@ -1,36 +1,37 @@
 import { useState } from "react";
+import API_BASE_URL from "../../api/api";
 
 function PlansPage() {
   const [selectedPlan, setSelectedPlan] = useState("premium");
 
  const plans = [
-  {
-    id: "basic",
-    name: "Basic",
-    duration: "1 Month",
-    price: "499",
-    profileLimit: 10,
-    profileText: "View up to 10 profiles",
-    description: "A simple start to your matrimonial journey.",
-    features: [
-      "Create matrimonial profile",
-      "View up to 10 member profiles",
-      "Send interest requests",
-      "Basic profile visibility",
-    ],
-  },
+{
+  id: "free",
+  name: "Free",
+  duration: "Free Access",
+  price: "0",
+  profileLimit: 20,
+  profileText: "View up to 20 profiles",
+  description: "Start your matrimonial journey with free access.",
+  features: [
+    "Create matrimonial profile",
+    "View up to 20 member profiles",
+    "Send interest requests",
+    "Basic profile visibility",
+  ],
+},
 
   {
     id: "premium",
-    name: "Premium",
-    duration: "3 Months",
-    price: "999",
+    name: "Gold",
+    duration: "Lifetime",
+price: "1500",
     profileLimit: 50,
     profileText: "View up to 50 profiles",
     popular: true,
     description: "More visibility and better opportunities to connect.",
     features: [
-      "Everything in Basic",
+      "Everything in Free",
       "View up to 50 member profiles",
       "Priority profile visibility",
       "Direct contact access",
@@ -40,14 +41,14 @@ function PlansPage() {
 
   {
     id: "royal",
-    name: "Royal",
-    duration: "6 Months",
-    price: "1,499",
+    name: "Diamond",
+    duration: "Lifetime",
+    price: "2500",
     profileLimit: Infinity,
     profileText: "View unlimited profiles",
     description: "Our complete plan for a serious matrimonial journey.",
     features: [
-      "Everything in Premium",
+      "Everything in Gold",
       "View unlimited member profiles",
       "Maximum profile visibility",
       "Priority connection requests",
@@ -102,7 +103,7 @@ function PlansPage() {
       <section className="px-5 pb-8 pt-12 text-center">
 
         <p className="text-[9px] font-semibold uppercase tracking-[3px] text-[#a67c35]">
-          Premium Membership
+        Gold Membership
         </p>
 
         <h2 className="mt-3 font-serif text-[32px] font-semibold text-[#4a1712] sm:text-[40px]">
@@ -242,7 +243,11 @@ function PlansPage() {
                     }
                   `}
                 >
-                  {isSelected ? "✓ Selected Plan" : "Choose Plan"}
+                  {isSelected
+  ? plan.id === "free"
+    ? "✓ Continue with Free →"
+    : "✓ Selected Plan"
+  : "Choose Plan"}
                 </button>
 
               </div>
@@ -292,24 +297,59 @@ function PlansPage() {
           {/* Pay Now */}
           <button
   type="button"
-  onClick={() => {
-    localStorage.setItem(
-      "selectedPlan",
-     JSON.stringify({
-  id: selected.id,
-  name: selected.name,
-  duration: selected.duration,
-  price: selected.price,
-  profileLimit: selected.profileLimit,
-  profileText: selected.profileText,
-})
+  onClick={async () => {
+  localStorage.setItem(
+    "selectedPlan",
+    JSON.stringify({
+      id: selected.id,
+      name: selected.name,
+      duration: selected.duration,
+      price: selected.price,
+      profileLimit: selected.profileLimit,
+      profileText: selected.profileText,
+    })
+  );
+
+if (selected.id === "free") {
+  try {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+     `${API_BASE_URL}/api/membership/free`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
     );
 
-    window.location.href = "/payment";
-  }}
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.message || "Unable to activate Free plan");
+      return;
+    }
+
+    alert(
+      "🎉 Free Plan Activated!\n\nYou can view up to 20 profiles for free."
+    );
+
+    window.location.href = "/";
+  } catch (error) {
+    console.error("Free Plan Error:", error);
+    alert("Something went wrong while activating Free plan.");
+  }
+} else {
+  window.location.href = "/payment";
+}
+}}
   className="mt-5 flex h-12 w-full items-center justify-center rounded-lg bg-[#d92c2c] text-[11px] font-semibold text-white shadow-[0_7px_18px_rgba(217,44,44,0.18)] transition hover:-translate-y-0.5 hover:bg-[#bd2020]"
 >
-  Continue to Payment →
+ {selected.id === "free"
+  ? "Continue with Free →"
+  : "Continue to Payment →"}
 </button>
 
           <p className="mt-3 text-center text-[8px] text-[#a28c7c]">

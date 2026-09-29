@@ -168,7 +168,7 @@ console.log("PHONEPE RESPONSE:", data.response);
               </h2>
 
               <p className="mx-auto mt-3 max-w-[430px] text-[10px] leading-5 text-[#806653]">
-                Your premium membership has been successfully activated.
+                Your gold membership has been successfully activated.
                 Your matrimonial journey just got better.
               </p>
 
@@ -184,11 +184,11 @@ console.log("PHONEPE RESPONSE:", data.response);
                     </p>
 
                     <h3 className="mt-1 font-serif text-[23px] font-semibold text-[#8c1d18]">
-                      Premium Plan
+                     Gold Plan
                     </h3>
 
                     <p className="mt-1 text-[9px] text-[#806653]">
-                      3 Months membership
+                      1 Month membership
                     </p>
                   </div>
 

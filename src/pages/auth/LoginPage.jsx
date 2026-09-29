@@ -136,34 +136,15 @@ try {
   // ACTIVE MEMBERSHIP
   // ========================================
 
-  if (
-    membership &&
-    membership.status?.toUpperCase() === "ACTIVE" &&
-    membership.end_date &&
-    new Date(membership.end_date) >= new Date()
-  ) {
-    // Membership active hai
-    // Aadhaar page par nahi jayega
-    window.location.href = "/";
-    return;
-  }
+if (
+  membership &&
+  membership.status?.toUpperCase() === "ACTIVE"
+) {
+  window.location.href = "/";
+  return;
+}
 
-  // ========================================
-  // EXPIRED MEMBERSHIP
-  // ========================================
 
-  if (
-    membership &&
-    membership.end_date &&
-    new Date(membership.end_date) < new Date()
-  ) {
-    alert(
-      "Your membership has expired. Please renew your membership to continue."
-    );
-
-    window.location.href = "/plans";
-    return;
-  }
 
  // ========================================
 // NO MEMBERSHIP

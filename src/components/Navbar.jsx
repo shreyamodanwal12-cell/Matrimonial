@@ -692,14 +692,8 @@ function Navbar() {
                             return;
                           }
 
-                          const isActive =
-                            membership.status?.toUpperCase() ===
-                              "ACTIVE" &&
-                            membership.end_date &&
-                            new Date(
-                              membership.end_date
-                            ) >= new Date();
-
+                      const isActive =
+  membership.status?.toUpperCase() === "ACTIVE";
                           if (!isActive) {
                             alert(
                               "Your membership has expired. Please take a membership plan."
@@ -1067,13 +1061,8 @@ function Navbar() {
                             return;
                           }
 
-                          const isActive =
-                            membership.status?.toUpperCase() ===
-                              "ACTIVE" &&
-                            membership.end_date &&
-                            new Date(
-                              membership.end_date
-                            ) >= new Date();
+                       const isActive =
+  membership.status?.toUpperCase() === "ACTIVE";
 
                           if (!isActive) {
                             alert(

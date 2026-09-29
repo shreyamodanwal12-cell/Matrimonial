@@ -265,37 +265,26 @@ export const checkPaymentStatus = async (req, res) => {
         const startDate = new Date();
 
         let duration;
-        let months;
+        
 
-        if (paymentData.plan_name === "Basic") {
-          duration = "1 Month";
-          months = 1;
-        } else if (paymentData.plan_name === "Premium") {
-          duration = "3 Months";
-          months = 3;
-        } else if (paymentData.plan_name === "Royal") {
-          duration = "6 Months";
-          months = 6;
-        } else {
-          console.error(
-            "Unknown Plan:",
-            paymentData.plan_name
-          );
+   if (paymentData.plan_name === "Gold") {
+  duration = "Lifetime";
 
-          return res.status(400).json({
-            success: false,
-            message: "Invalid plan name",
-          });
-        }
+} else if (paymentData.plan_name === "Diamond") {
+  duration = "Lifetime";
+}else {
+  console.error(
+    "Unknown Plan:",
+    paymentData.plan_name
+  );
 
-        // ------------------------------------------
-        // END DATE
-        // ------------------------------------------
-        const endDate = new Date(startDate);
+  return res.status(400).json({
+    success: false,
+    message: "Invalid plan name",
+  });
+}
 
-        endDate.setMonth(
-          endDate.getMonth() + months
-        );
+       
 
         // ------------------------------------------
         // INSERT MEMBERSHIP
@@ -313,13 +302,13 @@ export const checkPaymentStatus = async (req, res) => {
               amount: paymentData.amount,
               payment_id: paymentData.id,
               start_date: startDate.toISOString(),
-              end_date: endDate.toISOString(),
+              end_date: null,
               status: "ACTIVE",
             },
-          ])
+          ])                                                       
           .select()
           .single();
-
+      
         if (membershipError) {
           console.error(
             "❌ Membership Insert Error:",

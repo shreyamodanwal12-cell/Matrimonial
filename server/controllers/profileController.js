@@ -174,11 +174,11 @@ export const getFeaturedProfiles = async (req, res) => {
 
     // ==========================================
     // 3. DEFAULT = FREE USER
-    // FREE USER CAN VIEW 5 PROFILES
+   // FREE USER CAN VIEW 20 PROFILES
     // ==========================================
 
-    let profileLimit = 5;
-    let userPlan = "Free";
+   let profileLimit = 20;
+let userPlan = "Free";
 
     // ==========================================
     // 4. CHECK PAID MEMBERSHIP
@@ -188,14 +188,12 @@ export const getFeaturedProfiles = async (req, res) => {
       const membershipStatus =
         membership.status?.toUpperCase();
 
-      const expiryDate = membership.end_date
-        ? new Date(membership.end_date)
-        : null;
+      // const expiryDate = membership.end_date
+      //   ? new Date(membership.end_date)
+      //   : null;
 
-      const isActive =
-        membershipStatus === "ACTIVE" &&
-        expiryDate &&
-        expiryDate >= new Date();
+ const isActive =
+  membershipStatus === "ACTIVE";
 
       // ========================================
       // ACTIVE PAID MEMBERSHIP
@@ -204,16 +202,16 @@ export const getFeaturedProfiles = async (req, res) => {
       if (isActive) {
         userPlan = membership.plan_name;
 
-        if (membership.plan_name === "Basic") {
-          profileLimit = 10;
-        } else if (membership.plan_name === "Premium") {
-          profileLimit = 50;
-        } else if (membership.plan_name === "Royal") {
-          profileLimit = null; // Unlimited
-        } else {
+        if (membership.plan_name === "Free") {
+  profileLimit = 20;
+} else if (membership.plan_name === "Gold") {
+  profileLimit = 50;
+} else if (membership.plan_name === "Diamond") {
+  profileLimit = null;
+} else {
           // Unknown plan -> Free limit
           userPlan = "Free";
-          profileLimit = 5;
+         profileLimit = 20;
         }
       }
 
@@ -224,10 +222,10 @@ export const getFeaturedProfiles = async (req, res) => {
 
       else {
         userPlan = "Free";
-        profileLimit = 5;
+        profileLimit = 20;
 
         console.log(
-          "Membership expired/inactive. Using Free limit: 5"
+          "Membership expired/inactive. Using Free limit: 20"
         );
       }
     }

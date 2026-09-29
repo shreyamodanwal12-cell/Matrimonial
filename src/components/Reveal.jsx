@@ -17,7 +17,7 @@ function Reveal({ children, className = "" }) {
         }
       },
       {
-        threshold: 0.15,
+       threshold: 0,
       }
     );
 

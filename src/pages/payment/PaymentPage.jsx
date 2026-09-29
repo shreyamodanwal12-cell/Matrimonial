@@ -480,7 +480,7 @@ if (!selectedPlan) {
                   "Unlimited profile browsing",
                   "Priority profile visibility",
                   "Direct contact access",
-                  "Premium support",
+                  "Gold support",
                 ].map((benefit) => (
 
                   <div

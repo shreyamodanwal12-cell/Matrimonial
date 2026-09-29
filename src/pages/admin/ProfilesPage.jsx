@@ -553,10 +553,10 @@ const filteredProfiles = profiles.filter((profile) => {
   });
 }}
       className={`rounded-full px-2.5 py-1 text-[8px] font-semibold ${
-        profile.memberships[0]?.plan_name === "Royal"
+        profile.memberships[0]?.plan_name === "Diamond"
           ? "bg-[#f3e8ff] text-[#7e22ce]"
-          : profile.memberships[0]?.plan_name === "Premium"
-            ? "bg-[#fff1d8] text-[#b36b11]"
+          : profile.memberships[0]?.plan_name === "Gold"
+  ? "bg-[#fff1d8] text-[#b36b11]"
             : "bg-[#e7f6ed] text-[#287b51]"
       }`}
     >
@@ -684,9 +684,9 @@ const filteredProfiles = profiles.filter((profile) => {
   });
 }}
       className={`rounded-full px-2.5 py-1 text-[8px] font-semibold ${
-        profile.memberships[0]?.plan_name === "Royal"
+        profile.memberships[0]?.plan_name === "Diamond"
           ? "bg-[#f3e8ff] text-[#7e22ce]"
-          : profile.memberships[0]?.plan_name === "Premium"
+          : profile.memberships[0]?.plan_name === "Gold"
             ? "bg-[#fff1d8] text-[#b36b11]"
             : "bg-[#e7f6ed] text-[#287b51]"
       }`}

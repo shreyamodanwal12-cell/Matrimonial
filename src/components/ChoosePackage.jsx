@@ -4,21 +4,21 @@ function ChoosePackage() {
    const [alertMessage, setAlertMessage] = useState("");
   const packages = [
     {
-      name: "Basic",
-      price: "₹1",
-      duration: "1 Month",
-      icon: "🎁",
-      description: "Basic features",
-    },
+  name: "Free",
+  price: "₹0",
+  duration: "Lifetime",
+  icon: "🎁",
+  description: "Free access",
+},
     {
-      name: "Premium",
+      name: "Gold",
       price: "₹1",
       duration: "3 Months",
       icon: "👑",
       description: "Premium features",
     },
     {
-      name: "Royal",
+      name: "Diamond",
       price: "₹1",
       duration: "6 Months",
       icon: "💎",

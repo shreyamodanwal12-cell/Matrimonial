@@ -54,7 +54,7 @@ function PrivacyPolicyPage() {
                 education, and professional details.
               </li>
               <li>
-                Payment information for premium services.
+                Payment information for gold services.
               </li>
               <li>
                 Browsing history, IP address, and device information.

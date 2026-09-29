@@ -46,24 +46,8 @@ const membershipMiddleware = async (req, res, next) => {
       });
     }
 
-    // Check expiry
-    const now = new Date();
-    const expiryDate = new Date(membership.end_date);
+  
 
-    if (!membership.end_date || expiryDate < now) {
-      await supabase
-        .from("memberships")
-        .update({
-          status: "EXPIRED",
-        })
-        .eq("id", membership.id);
-
-      return res.status(403).json({
-        success: false,
-        message: "Your membership has expired",
-        requiresMembership: true,
-      });
-    }
 
     // Membership valid
     req.membership = membership;

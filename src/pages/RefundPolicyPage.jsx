@@ -41,7 +41,7 @@ function RefundPolicyPage() {
           {/* 2 */}
           <div className="mt-10">
             <h2 className="font-serif text-2xl font-semibold text-[#401711]">
-              2. Refund for Premium Services
+              2. Refund for Gold Services
             </h2>
 
             <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-7 text-[#60483d] sm:text-[15px]">
@@ -64,7 +64,7 @@ function RefundPolicyPage() {
             </h2>
 
             <p className="mt-4 text-sm leading-7 text-[#60483d] sm:text-[15px]">
-              Users can cancel their premium membership anytime, but no
+              Users can cancel their gold membership anytime, but no
               partial refunds will be issued for unused subscription
               periods.
             </p>
