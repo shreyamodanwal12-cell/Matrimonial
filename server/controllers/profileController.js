@@ -137,8 +137,6 @@ payments (
 };
 
 
-
-
 export const getFeaturedProfiles = async (req, res) => {
   try {
     // ==========================================
@@ -148,17 +146,84 @@ export const getFeaturedProfiles = async (req, res) => {
     const userId = req.user.id;
 
     // ==========================================
-    // 2. GET LATEST MEMBERSHIP
+    // 2. GET LOGGED-IN USER GENDER
     // ==========================================
 
-    const { data: membership, error: membershipError } =
-      await supabase
-        .from("memberships")
-        .select("plan_name, end_date, status")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+    const {
+      data: currentProfile,
+      error: currentProfileError,
+    } = await supabase
+      .from("matrimonial_profiles")
+      .select("gender")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (currentProfileError) {
+      console.error(
+        "Current User Gender Fetch Error:",
+        currentProfileError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to fetch your profile gender",
+      });
+    }
+
+    const currentGender =
+      currentProfile?.gender?.trim().toLowerCase();
+
+    if (!currentGender) {
+      return res.status(400).json({
+        success: false,
+        message: "Your gender is not available in profile",
+      });
+    }
+
+    // ==========================================
+    // 3. DETERMINE OPPOSITE GENDER
+    // ==========================================
+
+    let oppositeGender = null;
+
+    if (
+      currentGender === "male" ||
+      currentGender === "groom"
+    ) {
+      oppositeGender = "female";
+    } else if (
+      currentGender === "female" ||
+      currentGender === "bride"
+    ) {
+      oppositeGender = "male";
+    }
+
+    if (!oppositeGender) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid profile gender",
+      });
+    }
+
+    console.log("Logged-in Gender:", currentGender);
+    console.log("Showing Gender:", oppositeGender);
+
+    // ==========================================
+    // 4. GET LATEST MEMBERSHIP
+    // ==========================================
+
+    const {
+      data: membership,
+      error: membershipError,
+    } = await supabase
+      .from("memberships")
+      .select("plan_name, end_date, status")
+      .eq("user_id", userId)
+      .order("created_at", {
+        ascending: false,
+      })
+      .limit(1)
+      .maybeSingle();
 
     if (membershipError) {
       console.error(
@@ -173,54 +238,37 @@ export const getFeaturedProfiles = async (req, res) => {
     }
 
     // ==========================================
-    // 3. DEFAULT = FREE USER
-   // FREE USER CAN VIEW 20 PROFILES
+    // 5. DEFAULT = FREE USER
     // ==========================================
 
-   let profileLimit = 20;
-let userPlan = "Free";
+    let profileLimit = 20;
+    let userPlan = "Free";
 
     // ==========================================
-    // 4. CHECK PAID MEMBERSHIP
+    // 6. CHECK PAID MEMBERSHIP
     // ==========================================
 
     if (membership) {
       const membershipStatus =
         membership.status?.toUpperCase();
 
-      // const expiryDate = membership.end_date
-      //   ? new Date(membership.end_date)
-      //   : null;
-
- const isActive =
-  membershipStatus === "ACTIVE";
-
-      // ========================================
-      // ACTIVE PAID MEMBERSHIP
-      // ========================================
+      const isActive =
+        membershipStatus === "ACTIVE";
 
       if (isActive) {
         userPlan = membership.plan_name;
 
         if (membership.plan_name === "Free") {
-  profileLimit = 20;
-} else if (membership.plan_name === "Gold") {
-  profileLimit = 50;
-} else if (membership.plan_name === "Diamond") {
-  profileLimit = null;
-} else {
-          // Unknown plan -> Free limit
+          profileLimit = 20;
+        } else if (membership.plan_name === "Gold") {
+          profileLimit = 50;
+        } else if (membership.plan_name === "Diamond") {
+          profileLimit = null;
+        } else {
           userPlan = "Free";
-         profileLimit = 20;
+          profileLimit = 20;
         }
-      }
-
-      // ========================================
-      // EXPIRED / INACTIVE MEMBERSHIP
-      // Treat as FREE user
-      // ========================================
-
-      else {
+      } else {
         userPlan = "Free";
         profileLimit = 20;
 
@@ -231,13 +279,19 @@ let userPlan = "Free";
     }
 
     console.log("User Plan:", userPlan);
-    console.log("Allowed Profile Limit:", profileLimit);
+    console.log(
+      "Allowed Profile Limit:",
+      profileLimit
+    );
 
     // ==========================================
-    // 5. GET APPROVED PROFILES
+    // 7. GET APPROVED ACTIVE PROFILES
     // ==========================================
 
-    let query = supabase
+    const {
+      data: allProfiles,
+      error: profilesError,
+    } = await supabase
       .from("users")
       .select(`
         id,
@@ -245,6 +299,7 @@ let userPlan = "Free";
         profile_photo,
         profile_status,
         is_active,
+        created_at,
         matrimonial_profiles (
           gender,
           birth_date,
@@ -268,21 +323,6 @@ let userPlan = "Free";
         ascending: false,
       });
 
-    // ==========================================
-    // 6. APPLY PROFILE LIMIT
-    // ==========================================
-
-    if (profileLimit !== null) {
-      query = query.limit(profileLimit);
-    }
-
-    // ==========================================
-    // 7. EXECUTE QUERY
-    // ==========================================
-
-    const { data: profiles, error: profilesError } =
-      await query;
-
     if (profilesError) {
       console.error(
         "Featured profiles error:",
@@ -296,7 +336,49 @@ let userPlan = "Free";
     }
 
     // ==========================================
-    // 8. RESPONSE
+    // 8. FILTER OPPOSITE GENDER
+    // ==========================================
+
+    const filteredProfiles =
+      (allProfiles || []).filter((profile) => {
+        const profileGender =
+          profile.matrimonial_profiles?.gender
+            ?.trim()
+            .toLowerCase();
+
+        return profileGender === oppositeGender;
+      });
+
+    console.log(
+      "Total Approved Active Profiles:",
+      allProfiles?.length || 0
+    );
+
+    console.log(
+      "Opposite Gender Profiles:",
+      filteredProfiles.length
+    );
+
+    // ==========================================
+    // 9. APPLY MEMBERSHIP PROFILE LIMIT
+    // ==========================================
+
+    let finalProfiles = filteredProfiles;
+
+    if (profileLimit !== null) {
+      finalProfiles = filteredProfiles.slice(
+        0,
+        profileLimit
+      );
+    }
+
+    console.log(
+      "Final Profiles Count:",
+      finalProfiles.length
+    );
+
+    // ==========================================
+    // 10. RESPONSE
     // ==========================================
 
     return res.status(200).json({
@@ -306,7 +388,7 @@ let userPlan = "Free";
         profileLimit === null
           ? "Unlimited"
           : profileLimit,
-      profiles: profiles || [],
+      profiles: finalProfiles,
     });
 
   } catch (error) {
@@ -321,6 +403,8 @@ let userPlan = "Free";
     });
   }
 };
+
+
 
 // ======================================================
 // UPLOAD PROFILE PHOTO

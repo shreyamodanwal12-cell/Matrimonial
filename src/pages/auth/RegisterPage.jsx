@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import API_BASE_URL from "../../api/api";
 
 const inputClass =
@@ -33,6 +33,65 @@ function RegisterPage() {
     employmentType: "Private",
     jobDetails: "",
   });
+const [castes, setCastes] = useState([]);
+const [subCastes, setSubCastes] = useState([]);
+// ==========================================
+// FETCH CASTES
+// ==========================================
+useEffect(() => {
+  const fetchCastes = async () => {
+    try {
+      const response = await fetch(
+       `${API_BASE_URL}/api/castes`
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setCastes(data.castes || []);
+      }
+    } catch (error) {
+      console.error("Fetch Castes Error:", error);
+    }
+  };
+
+  fetchCastes();
+}, []);
+
+const handleCasteChange = async (e) => {
+  const casteId = e.target.value;
+
+  const selectedCaste = castes.find(
+    (item) => item.id === casteId
+  );
+
+  setFormData((prev) => ({
+    ...prev,
+    caste: selectedCaste ? selectedCaste.name : "",
+    subCaste: "",
+  }));
+
+  setSubCastes([]);
+
+  if (!casteId) {
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/sub-castes?caste_id=${casteId}`
+    );
+
+    const data = await response.json();
+
+    if (data.success) {
+      setSubCastes(data.subCastes || []);
+    }
+  } catch (error) {
+    console.error("Fetch Sub-Castes Error:", error);
+  }
+};
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -599,20 +658,21 @@ const handleSubmit = async (e) => {
                   Caste
                 </label>
 
-                <select
-                  name="caste"
-                  value={formData.caste}
-                  onChange={handleChange}
-                  className={selectClass}
-                >
-                  <option value="">Select Caste</option>
-                  <option>Brahmin</option>
-                  <option>Rajput</option>
-                  <option>Yadav</option>
-                  <option>Kurmi</option>
-                  <option>Vaishya</option>
-                  <option>Other</option>
-                </select>
+               <select
+  value={
+    castes.find((item) => item.name === formData.caste)?.id || ""
+  }
+  onChange={handleCasteChange}
+  className={selectClass}
+>
+  <option value="">Select Caste</option>
+
+  {castes.map((item) => (
+    <option key={item.id} value={item.id}>
+      {item.name}
+    </option>
+  ))}
+</select>
 
               </div>
 
@@ -626,15 +686,24 @@ const handleSubmit = async (e) => {
                 </label>
 
                 <select
-                  name="subCaste"
-                  value={formData.subCaste}
-                  onChange={handleChange}
-                  className={selectClass}
-                >
-                  <option value="">Select Sub-Caste</option>
-                  <option>None</option>
-                  <option>Other</option>
-                </select>
+  name="subCaste"
+  value={formData.subCaste}
+  onChange={handleChange}
+  className={selectClass}
+  disabled={!formData.caste}
+>
+  <option value="">
+    {formData.caste
+      ? "Select Sub-Caste"
+      : "Select Caste First"}
+  </option>
+
+  {subCastes.map((item) => (
+    <option key={item.id} value={item.name}>
+      {item.name}
+    </option>
+  ))}
+</select>
 
               </div>
 

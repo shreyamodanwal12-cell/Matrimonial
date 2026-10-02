@@ -51,6 +51,13 @@ function AdminSidebar() {
       icon: "⚙️",
       path: "/admin/settings",
     },
+{
+  label: "Caste Management",
+  icon: "🪷",
+  path: "/admin/caste-management",
+},
+
+
   ];
 
   const navigate = (path) => {

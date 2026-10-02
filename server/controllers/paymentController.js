@@ -11,6 +11,7 @@ const FRONTEND_URL =
   process.env.FRONTEND_URL || "http://localhost:5173";
 export const createPayment = async (req, res) => {
   try {
+    console.log("FRONTEND_URL:", process.env.FRONTEND_URL);
     const userId = req.user.id;
 
     // ₹1 test payment

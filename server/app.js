@@ -9,6 +9,9 @@ import chatRoutes from "./routes/chatRoutes.js";
 import testimonialRoutes from "./routes/testimonialRoutes.js";
 import interestRoutes from "./routes/interestRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
+import casteRoutes from "./routes/casteRoutes.js";
+
+
 const app = express();
 ;
 app.use( 
@@ -31,7 +34,7 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/testimonials", testimonialRoutes);
 app.use("/api/interests", interestRoutes);
 app.use("/api/reports", reportRoutes);
-
+app.use("/api", casteRoutes);
 
 // app.get("/", (req, res) => {
 //   res.json({

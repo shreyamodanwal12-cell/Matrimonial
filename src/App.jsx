@@ -26,6 +26,7 @@ import TermsPage from "./pages/TermsPage";
 import RefundPolicyPage from "./pages/RefundPolicyPage";
 import SubmitTestimonialPage from "./pages/SubmitTestimonialPage";
 import AdminTestimonialsPage from "./pages/admin/AdminTestimonialsPage";
+import CasteManagement from "./pages/admin/CasteManagement";
 import AadhaarVerificationPage from "./pages/AadhaarVerificationPage";
 import InterestRequestsPage from "./pages/InterestRequestsPage";
 import MyInterestsPage from "./pages/MyInterestsPage";
@@ -254,6 +255,20 @@ if (path === "/admin/testimonials") {
   return (
     <AdminLayout>
       <AdminTestimonialsPage />
+    </AdminLayout>
+  );
+}
+
+// Admin Caste Management
+if (path === "/admin/caste-management") {
+  if (!isAdmin) {
+    window.location.href = "/login";
+    return null;
+  }
+
+  return (
+    <AdminLayout>
+      <CasteManagement />
     </AdminLayout>
   );
 }

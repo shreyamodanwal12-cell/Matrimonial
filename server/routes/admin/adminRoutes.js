@@ -6,6 +6,10 @@ import adminMiddleware from "../../middleware/adminMiddleware.js";
 import {
   getMemberForAdmin,
   updateMember,
+  getCastes,
+  addCaste,
+  getSubCastes,
+  addSubCaste,
 } from "../../controllers/adminController.js";
 
 const router = express.Router();
@@ -37,6 +41,42 @@ router.put(
   authMiddleware,
   adminMiddleware,
   updateMember
+);
+
+// ==========================================
+// CASTE MANAGEMENT
+// ==========================================
+
+// Get all castes
+router.get(
+  "/castes",
+  authMiddleware,
+  adminMiddleware,
+  getCastes
+);
+
+// Add caste
+router.post(
+  "/castes",
+  authMiddleware,
+  adminMiddleware,
+  addCaste
+);
+
+// Get sub-castes
+router.get(
+  "/sub-castes",
+  authMiddleware,
+  adminMiddleware,
+  getSubCastes
+);
+
+// Add sub-caste
+router.post(
+  "/sub-castes",
+  authMiddleware,
+  adminMiddleware,
+  addSubCaste
 );
 
 export default router;
