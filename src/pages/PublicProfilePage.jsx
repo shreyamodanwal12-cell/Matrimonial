@@ -5,6 +5,7 @@ function PublicProfilePage() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
 
   const userId = window.location.pathname.split("/").pop();
  const token = localStorage.getItem("token");
@@ -38,7 +39,16 @@ const response = await fetch(
         );
       }
 
-      setProfile(data.profile);
+     setProfile(data.profile);
+
+const firstPhoto =
+  data.profile?.photos?.photo_1 ||
+  data.profile?.photos?.photo_2 ||
+  data.profile?.photos?.photo_3 ||
+  data.profile?.user?.profile_photo ||
+  null;
+
+setSelectedPhoto(firstPhoto);
 
      } catch (error) {
     console.error("Public Profile Error:", error);
@@ -200,6 +210,7 @@ const handleStartChat = async () => {
     education,
     family,
     lifestyle,
+    photos,
   } = profile;
 
   const age = calculateAge(
@@ -242,23 +253,71 @@ const handleStartChat = async () => {
 
             <div className="grid md:grid-cols-[360px_1fr]">
 
-              {/* PHOTO */}
-            {/* PHOTO */}
-<div className="h-[400px] bg-[#f3e6d4] md:h-full">
+     {/* ================= PHOTO GALLERY ================= */}
+<div className="bg-[#f3e6d4] p-3">
 
-  {user?.profile_photo ? (
-    <img
-      src={user.profile_photo}
-      alt={user?.full_name}
-      className="h-full w-full object-cover"
-    />
-  ) : (
-    <div className="flex h-full w-full items-center justify-center bg-[#f3e6d4]">
-      <span className="font-serif text-[100px] font-semibold text-[#8c1d18]">
-        {(user?.full_name || "U").charAt(0).toUpperCase()}
-      </span>
-    </div>
-  )}
+  {/* MAIN PHOTO */}
+  <div className="h-[400px] overflow-hidden rounded-xl bg-white md:h-[500px]">
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+    {selectedPhoto ? (
+      <img
+        src={selectedPhoto}
+        alt={user?.full_name}
+        className="h-full w-full object-contain"
+      />
+    ) : (
+      <div className="flex h-full w-full items-center justify-center bg-[#f3e6d4]">
+        <span className="font-serif text-[100px] font-semibold text-[#8c1d18]">
+          {(user?.full_name || "U").charAt(0).toUpperCase()}
+        </span>
+      </div>
+    )}
+
+  </div>
+
+
+  {/* THUMBNAILS */}
+  <div className="mt-3 grid grid-cols-3 gap-2">
+
+    {[
+      photos?.photo_1,
+      photos?.photo_2,
+      photos?.photo_3,
+    ]
+      .filter(Boolean)
+      .map((photo, index) => (
+        <button
+          key={photo}
+          type="button"
+          onClick={() => setSelectedPhoto(photo)}
+          className={`h-[90px] overflow-hidden rounded-lg border-2 ${
+            selectedPhoto === photo
+              ? "border-[#8c1d18]"
+              : "border-transparent"
+          }`}
+        >
+          <img
+            src={photo}
+            alt={`${user?.full_name} photo ${index + 1}`}
+            className="h-full w-full object-cover"
+          />
+        </button>
+      ))}
+
+  </div>
 
 </div>
 

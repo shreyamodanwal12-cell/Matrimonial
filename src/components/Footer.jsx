@@ -1,3 +1,4 @@
+import logo from "../assets/logo.jpeg";
 function Footer() {
   return (
     <footer
@@ -14,9 +15,13 @@ function Footer() {
 
             <div className="flex items-center gap-3">
 
-              <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-[#d7a744] bg-[#8c1d18] text-[21px] text-[#f5c45e]">
-                ॐ
-              </div>
+              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border-2 border-[#d7a744] bg-white">
+  <img
+    src={logo}
+    alt="Shiva Parvati Matrimonial Logo"
+    className="h-full w-full object-contain"
+  />
+</div>
 
               <div className="leading-none">
 

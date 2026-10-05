@@ -1672,7 +1672,24 @@ if (loggedInUserId !== userId) {
     if (lifestyleError) {
       console.error("Lifestyle Details Error:", lifestyleError);
     }
+// =========================
+// PROFILE PHOTOS
+// =========================
 
+const { data: documents, error: documentsError } =
+  await supabase
+    .from("profile_documents")
+    .select(`
+      photo_1,
+      photo_2,
+      photo_3
+    `)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+if (documentsError) {
+  console.error("Profile Photos Error:", documentsError);
+}
     // =========================
     // FINAL PUBLIC PROFILE
     // =========================
@@ -1685,6 +1702,11 @@ if (loggedInUserId !== userId) {
         education: education || {},
         family: family || {},
         lifestyle: lifestyle || {},
+        photos: {
+      photo_1: documents?.photo_1 || null,
+      photo_2: documents?.photo_2 || null,
+      photo_3: documents?.photo_3 || null,
+        }
       },
     });
 
